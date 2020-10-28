@@ -15,7 +15,7 @@ X_CFLAGS	+= -std=gnu11 -O0 -g -ggdb \
 X_LDFLAGS	+= -z max-page-size=4096 -T kernel.ld -no-pie -nostdlib
 
 NAME	:= kernel
-SRC		+= entry.S start.c
+SRC		+= *.S *.c
 
 define CUSTOM_TARGET_CMD
 echo [KERNEL] $@; \
