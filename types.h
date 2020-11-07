@@ -8,3 +8,8 @@ typedef unsigned int uint32;
 typedef unsigned long uint64;
 
 typedef uint64 pde_t;
+
+typedef unsigned char u8_t;
+typedef unsigned long long u64_t;
+
+typedef unsigned long long virtual_addr_t;

@@ -1,3 +1,5 @@
+#pragma once
+
 // which hart (core) is this?
 static inline uint64
 r_mhartid()
@@ -362,8 +364,7 @@ r_ra()
 }
 
 // flush the TLB.
-static inline void
-sfence_vma()
+static inline void sfence_vma()
 {
     // the zero, zero means flush all TLB entries.
     asm volatile("sfence.vma zero, zero");

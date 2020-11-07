@@ -1,62 +1,16 @@
 #include "types.h"
 #include "riscv.h"
 #include "memlayout.h"
+#include "kalloc.h"
+#include "vm.h"
+#include "print.h"
+
+#include <stddef.h>
 
 #define NCPU 1 // maximum number of CPUs
 
 // entry.S needs one stack per CPU.
 __attribute__((aligned(16))) char stack0[4096 * NCPU];
-
-typedef unsigned char u8_t;
-typedef unsigned long long u64_t;
-
-typedef unsigned long long virtual_addr_t;
-
-static inline u8_t read8(virtual_addr_t addr)
-{
-    return (*((volatile u8_t *)(addr)));
-}
-
-static inline void write8(virtual_addr_t addr, u8_t value)
-{
-    *((volatile u8_t *)(addr)) = value;
-}
-
-volatile virtual_addr_t virt = 0x10000000;
-
-void print_u8(u8_t c)
-{
-    while ((read8(virt + 0x05) & (0x1 << 6)) == 0)
-        ;
-    write8(virt + 0x00, c);
-}
-
-void print(const char *buf)
-{
-    for (int i = 0; buf[i]; i++)
-    {
-        print_u8(buf[i]);
-    }
-}
-
-void print_u64(u64_t i)
-{
-    u64_t a = i % 10;
-    u64_t b = i / 10;
-    if (b)
-        print_u64(b);
-    print_u8('0' + a);
-}
-
-void printx_u64(u64_t i)
-{
-    static char c[] = "0123456789ABCDEF";
-    u64_t a = i % 16;
-    u64_t b = i / 16;
-    if (b)
-        printx_u64(b);
-    print_u8(c[a]);
-}
 
 extern void kernelvec();
 extern void timervec();
@@ -186,7 +140,11 @@ void kerneltrap()
 void main()
 {
     print("main\r\n");
+    kinit();
     trapinithart();
+    kvminit();
+    kvminithart();
+
     while (1)
         ;
 }
@@ -214,7 +172,7 @@ void start()
     w_sie(r_sie() | SIE_SEIE | SIE_STIE | SIE_SSIE);
 
     // ask for clock interrupts.
-    timerinit();
+    // timerinit();
     // enable machine-mode interrupts.
     w_sstatus(r_sstatus() | SSTATUS_SIE);
     // enable machine-mode timer interrupts.
