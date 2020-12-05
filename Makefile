@@ -5,18 +5,19 @@ endif
 CROSS_COMPILE	:= riscv64-linux-gnu-
 export CROSS_COMPILE
 
+W_FLAGS	= -Wall -Werror=implicit-function-declaration
 X_CFLAGS	+= -std=gnu11 -O0 -g -ggdb \
-				-Wall \
-				-Wimplicit-function-declaration \
+				$(W_FLAGS) \
 				-march=rv64g -mabi=lp64d -mcmodel=medany \
 				-ffreestanding -fsigned-char \
 				-fno-omit-frame-pointer -fno-common -nostdlib -mno-relax \
 				-fno-pie
+				
 
 X_LDFLAGS	+= -z max-page-size=4096 -T kernel.ld -no-pie -nostdlib
 
 NAME	:= kernel
-SRC		+= entry.S  start.c kalloc.c  kernelvec.S  print.c    string.c  vm.c
+SRC		+= entry.S  start.c main.c kalloc.c  kernelvec.S  print.c string.c  vm.c context_switch.S task.c
 
 define CUSTOM_TARGET_CMD
 echo [KERNEL] $@; \
@@ -29,6 +30,7 @@ QEMU		= qemu-system-riscv64
 QEMUOPTS	= -machine virt -bios none -kernel kernel -m 128M -smp 1 -serial stdio
 # QEMUOPTS += -drive file=fs.img,if=none,format=raw,id=x0
 # QEMUOPTS += -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
+
 
 qemu:
 	$(QEMU) $(QEMUOPTS)

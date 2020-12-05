@@ -3,6 +3,8 @@
 #include "riscv.h"
 #include "print.h"
 #include "vm.h"
+#include "kalloc.h"
+#include "string.h"
 
 #define panic print
 /*

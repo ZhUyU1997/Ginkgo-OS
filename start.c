@@ -4,6 +4,7 @@
 #include "kalloc.h"
 #include "vm.h"
 #include "print.h"
+#include "task.h"
 
 #include <stddef.h>
 
@@ -12,14 +13,8 @@
 // entry.S needs one stack per CPU.
 __attribute__((aligned(16))) char stack0[4096 * NCPU];
 
-extern void kernelvec();
-extern void timervec();
 
-// set up to take exceptions and traps while in the kernel.
-void trapinithart(void)
-{
-    w_stvec((uint64)kernelvec);
-}
+extern void timervec();
 
 void timerinit()
 {
@@ -137,17 +132,7 @@ void kerneltrap()
     w_sstatus(sstatus);
 }
 
-void main()
-{
-    print("main\r\n");
-    kinit();
-    trapinithart();
-    kvminit();
-    kvminithart();
 
-    while (1)
-        ;
-}
 
 void start()
 {
@@ -161,6 +146,7 @@ void start()
 
     // set M Exception Program Counter to main, for mret.
     // requires gcc -mcmodel=medany
+    void main();
     w_mepc((uint64)main);
 
     // disable paging for now.
