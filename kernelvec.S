@@ -127,10 +127,9 @@ timervec:
         sd t4, 224(sp)
         sd t5, 232(sp)
         sd t6, 240(sp)
-
-	// call the C trap handler in trap.c
         call timertrap
-
+        # raise a supervisor software interrupt.
+        csrwi sip, 2
         // restore registers.
         ld ra, 0(sp)
         ld sp, 8(sp)

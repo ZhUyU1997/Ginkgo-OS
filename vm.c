@@ -55,8 +55,8 @@ void kvminit(void)
 // and enable paging.
 void kvminithart()
 {
-    w_satp(MAKE_SATP(kernel_pagetable));
-    sfence_vma();
+    csr_write(satp, MAKE_SATP(kernel_pagetable));
+    local_flush_tlb_all();
 }
 
 pte_t *walk(pagetable_t pagetable, uint64 va, int alloc)

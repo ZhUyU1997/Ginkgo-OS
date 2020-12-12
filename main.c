@@ -10,7 +10,7 @@ extern void kernelvec();
 // set up to take exceptions and traps while in the kernel.
 void trapinithart(void)
 {
-    w_stvec((uint64)kernelvec);
+    csr_write(stvec, (uint64)kernelvec);
 }
 
 void hello()

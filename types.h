@@ -15,5 +15,6 @@ typedef uint64 u64_t;
 typedef uint64 virtual_addr_t;
 typedef uint64 size_t;
 typedef uint64 register_t;
+typedef uint64 irq_flags_t;
 
 #define NULL ((void *)0)

@@ -13,13 +13,12 @@
 // entry.S needs one stack per CPU.
 __attribute__((aligned(16))) char stack0[4096 * NCPU];
 
-
 extern void timervec();
 
 void timerinit()
 {
     // each CPU has a separate source of timer interrupts.
-    int id = r_mhartid();
+    int id = csr_read(mhartid);
 
     // ask the CLINT for a timer interrupt.
     int interval = 10000000; // cycles; about 1/10th second in qemu.
@@ -32,16 +31,16 @@ void timerinit()
     // uint64 *scratch = &timer_scratch[id][0];
     // scratch[3] = CLINT_MTIMECMP(id);
     // scratch[4] = interval;
-    // w_mscratch((uint64)scratch);
+    // csr_write(mscratch, (uint64)scratch);
 
     // set the machine-mode trap handler.
-    w_mtvec((uint64)timervec);
+    csr_write(mtvec, (uint64)timervec);
 
     // enable machine-mode interrupts.
-    w_mstatus(r_mstatus() | MSTATUS_MIE);
+    csr_set(mstatus, MSTATUS_MIE);
 
     // enable machine-mode timer interrupts.
-    w_mie(r_mie() | MIE_MTIE);
+    csr_set(mie, MIE_MTIE);
 }
 
 // check if it's an external interrupt or software interrupt,
@@ -51,7 +50,7 @@ void timerinit()
 // 0 if not recognized.
 int devintr()
 {
-    uint64 scause = r_scause();
+    uint64 scause = csr_read(scause);
     print("devintr\r\n");
     if ((scause & 0x8000000000000000L) &&
         (scause & 0xff) == 9)
@@ -71,7 +70,7 @@ int devintr()
 
         // acknowledge the software interrupt by clearing
         // the SSIP bit in sip.
-        w_sip(r_sip() & ~2);
+        csr_clear(sip, 2);
 
         return 2;
     }
@@ -85,7 +84,7 @@ void timertrap()
 {
     print("timertrap\r\n");
     // each CPU has a separate source of timer interrupts.
-    int id = r_mhartid();
+    int id = csr_read(mhartid);
 
     // ask the CLINT for a timer interrupt.
     int interval = 10000000; // cycles; about 1/10th second in qemu.
@@ -94,9 +93,9 @@ void timertrap()
 void kerneltrap()
 {
     print("kerneltrap\r\n");
-    uint64 sepc = r_sepc();
-    uint64 sstatus = r_sstatus();
-    uint64 scause = r_scause();
+    uint64 sepc = csr_read(sepc);
+    uint64 sstatus = csr_read(sstatus);
+    uint64 scause = csr_read(scause);
 
     if ((sstatus & SSTATUS_SPP) == 0)
     {
@@ -114,58 +113,56 @@ void kerneltrap()
 
     if ((devintr()) == 0)
     {
-        print("scause :");
+        print("scause:");
         printx_u64(scause);
         print("\n");
         print("sepc :");
-        printx_u64(r_sepc());
+        printx_u64(csr_read(sepc));
         print("\n");
         print("stval :");
-        printx_u64(r_stval());
+        printx_u64(csr_read(stval));
         print("\n");
         while (1)
             ;
     }
     // the yield() may have caused some traps to occur,
     // so restore trap registers for use by kernelvec.S's sepc instruction.
-    w_sepc(sepc);
-    w_sstatus(sstatus);
+    csr_write(sepc, sepc);
+    csr_write(sstatus, sstatus);
 }
-
-
 
 void start()
 {
     print("Hello RISC-V!\r\n");
 
     // set M Previous Privilege mode to Supervisor, for mret.
-    unsigned long x = r_mstatus();
+    unsigned long x = csr_read(mstatus);
     x &= ~MSTATUS_MPP_MASK;
     x |= MSTATUS_MPP_S;
-    w_mstatus(x);
+    csr_write(mstatus, x);
 
     // set M Exception Program Counter to main, for mret.
     // requires gcc -mcmodel=medany
     void main();
-    w_mepc((uint64)main);
+    csr_write(mepc, (uint64)main);
 
     // disable paging for now.
-    w_satp(0);
+    csr_write(satp, 0);
 
     // delegate all interrupts and exceptions to supervisor mode.
-    w_medeleg(0xffff);
-    w_mideleg(0xffff);
-    w_sie(r_sie() | SIE_SEIE | SIE_STIE | SIE_SSIE);
+    csr_write(medeleg, 0xffff);
+    csr_write(mideleg, 0xffff);
+    csr_set(sie, SIE_SEIE | SIE_STIE | SIE_SSIE);
 
     // ask for clock interrupts.
     // timerinit();
     // enable machine-mode interrupts.
-    w_sstatus(r_sstatus() | SSTATUS_SIE);
+    csr_set(sstatus, SSTATUS_SIE);
     // enable machine-mode timer interrupts.
-
+    timerinit();
     // keep each CPU's hartid in its tp register, for cpuid().
-    int id = r_mhartid();
-    w_tp(id);
+    int id = csr_read(mhartid);
+    register_write(tp, id);
     // switch to supervisor mode and jump to main().
     asm volatile("mret");
 }
