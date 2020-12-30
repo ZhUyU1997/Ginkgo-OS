@@ -5,7 +5,7 @@ endif
 CROSS_COMPILE	:= riscv64-linux-gnu-
 export CROSS_COMPILE
 
-W_FLAGS	= -Wall -Werror=implicit-function-declaration
+W_FLAGS		= -Wall -Werror=implicit-function-declaration
 X_CFLAGS	+= -std=gnu11 -O0 -g -ggdb \
 				$(W_FLAGS) \
 				-march=rv64g -mabi=lp64d -mcmodel=medany \
@@ -16,8 +16,9 @@ X_CFLAGS	+= -std=gnu11 -O0 -g -ggdb \
 X_INCDIRS	+= include
 X_LDFLAGS	+= -z max-page-size=4096 -T kernel.ld -no-pie -nostdlib
 
-NAME	:= kernel
-SRC		+= arch/entry.S arch/kernelvec.S arch/context_switch.S core/*.c mm/*.c
+X_CLEAN		+= kernel.asm kernel.sym
+NAME		:= kernel
+SRC			+= arch/entry.S arch/kernelvec.S arch/context_switch.S core/*.c mm/*.c
 
 define CUSTOM_TARGET_CMD
 echo [KERNEL] $@; \
