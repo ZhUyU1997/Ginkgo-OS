@@ -3,8 +3,8 @@
 #include "memlayout.h"
 #include "kalloc.h"
 #include "vm.h"
-#include "print.h"
 #include "task.h"
+#include "printv.h"
 
 extern void kernelvec();
 // set up to take exceptions and traps while in the kernel.
@@ -23,7 +23,7 @@ void hello()
 
 void main()
 {
-    print("main\r\n");
+    printv("main\r\n");
     kinit();
     trapinithart();
     kvminit();

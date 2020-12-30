@@ -1,7 +1,7 @@
 #include "types.h"
 
 void *
-memset(void *dst, int c, uint n)
+memset(void *dst, int c, uint32 n)
 {
     char *cdst = (char *)dst;
     int i;
@@ -12,7 +12,7 @@ memset(void *dst, int c, uint n)
     return dst;
 }
 
-int memcmp(const void *v1, const void *v2, uint n)
+int memcmp(const void *v1, const void *v2, uint32 n)
 {
     const uchar *s1, *s2;
 
@@ -29,7 +29,7 @@ int memcmp(const void *v1, const void *v2, uint n)
 }
 
 void *
-memmove(void *dst, const void *src, uint n)
+memmove(void *dst, const void *src, uint32 n)
 {
     const char *s;
     char *d;
@@ -52,12 +52,12 @@ memmove(void *dst, const void *src, uint n)
 
 // memcpy exists to placate GCC.  Use memmove.
 void *
-memcpy(void *dst, const void *src, uint n)
+memcpy(void *dst, const void *src, uint32 n)
 {
     return memmove(dst, src, n);
 }
 
-int strncmp(const char *p, const char *q, uint n)
+int strncmp(const char *p, const char *q, uint32 n)
 {
     while (n > 0 && *p && *p == *q)
         n--, p++, q++;

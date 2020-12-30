@@ -1,6 +1,7 @@
 #pragma once
 
-#include "csr.h"
+#include <types.h>
+#include <csr.h>
 
 // Machine Status Register, mstatus
 #define MSTATUS_MPP_MASK (3L << 11) // previous mode.

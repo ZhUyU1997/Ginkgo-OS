@@ -1,12 +1,11 @@
 #include "types.h"
 #include "memlayout.h"
 #include "riscv.h"
-#include "print.h"
+#include "printv.h"
 #include "vm.h"
 #include "kalloc.h"
 #include "string.h"
 
-#define panic print
 /*
  * the kernel's page table.
  */
@@ -21,7 +20,7 @@ pagetable_t kvmmake(void)
 {
     pagetable_t kpgtbl;
 
-    kpgtbl = (pagetable_t)kalloc();
+    kpgtbl = (pagetable_t)alloc_page(1);
     memset(kpgtbl, 0, PGSIZE);
 
     // uart registers
@@ -73,7 +72,7 @@ pte_t *walk(pagetable_t pagetable, uint64 va, int alloc)
         }
         else
         {
-            if (!alloc || (pagetable = (pde_t *)kalloc()) == 0)
+            if (!alloc || (pagetable = (pde_t *)alloc_page(1)) == 0)
                 return 0;
             memset(pagetable, 0, PGSIZE);
             *pte = PA2PTE(pagetable) | PTE_V;

@@ -3,7 +3,7 @@
 #include "memlayout.h"
 #include "kalloc.h"
 #include "vm.h"
-#include "print.h"
+#include "printv.h"
 #include "task.h"
 
 #include <stddef.h>
@@ -51,14 +51,14 @@ void timerinit()
 int devintr()
 {
     uint64 scause = csr_read(scause);
-    print("devintr\r\n");
+    printv("devintr\r\n");
     if ((scause & 0x8000000000000000L) &&
         (scause & 0xff) == 9)
     {
         // this is a supervisor external interrupt, via PLIC.
 
         // irq indicates which device interrupted.
-        print("PLIC");
+        printv("PLIC");
         return 1;
     }
     else if (scause == 0x8000000000000001L)
@@ -66,7 +66,7 @@ int devintr()
         // software interrupt from a machine-mode timer interrupt,
         // forwarded by timervec in kernelvec.S.
 
-        print("timer");
+        printv("timer");
 
         // acknowledge the software interrupt by clearing
         // the SSIP bit in sip.
@@ -82,7 +82,7 @@ int devintr()
 
 void timertrap()
 {
-    print("timertrap\r\n");
+    printv("timertrap\r\n");
     // each CPU has a separate source of timer interrupts.
     int id = csr_read(mhartid);
 
@@ -92,38 +92,30 @@ void timertrap()
 }
 void kerneltrap()
 {
-    print("kerneltrap\r\n");
+    printv("kerneltrap\r\n");
     uint64 sepc = csr_read(sepc);
     uint64 sstatus = csr_read(sstatus);
     uint64 scause = csr_read(scause);
 
     if ((sstatus & SSTATUS_SPP) == 0)
     {
-        print("kerneltrap: not from supervisor mode");
-        while (1)
-            ;
+        panic("kerneltrap: not from supervisor mode");
     }
 
     if (intr_get() != 0)
     {
-        print("kerneltrap: interrupts enabled");
-        while (1)
-            ;
+        panic("kerneltrap: interrupts enabled");
     }
 
     if ((devintr()) == 0)
     {
-        print("scause:");
-        printx_u64(scause);
-        print("\n");
-        print("sepc :");
-        printx_u64(csr_read(sepc));
-        print("\n");
-        print("stval :");
-        printx_u64(csr_read(stval));
-        print("\n");
-        while (1)
-            ;
+        unsigned long spec = csr_read(sepc);
+        unsigned long stval = csr_read(stval);
+
+        panic(
+            "scause:" $(scause) "\n",
+            "sepc: " $(spec) "\n",
+            "stval: " $(stval) "\n");
     }
     // the yield() may have caused some traps to occur,
     // so restore trap registers for use by kernelvec.S's sepc instruction.
@@ -133,7 +125,7 @@ void kerneltrap()
 
 void start()
 {
-    print("Hello RISC-V!\r\n");
+    printv("Hello RISC-V!\r\n");
 
     // set M Previous Privilege mode to Supervisor, for mret.
     unsigned long x = csr_read(mstatus);

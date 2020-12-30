@@ -1,6 +1,6 @@
 #include "task.h"
 #include "vm.h"
-#include "print.h"
+#include "printv.h"
 #include "kalloc.h"
 
 int nextpid = 1;
@@ -21,17 +21,12 @@ void schedule()
         task_t *task = container_of(list, task_t, list);
         task_t *old = current;
         current = task;
-        print("swtch:");
-        print(old->name);
-        print("-->");
-        print(current->name);
-        print("\n");
-
+        printv("swtch:"$(old->name)"-->"$(current->name)"\n");
         swtch(&old->context, &current->context);
     }
     else
     {
-        print("empty task list\n");
+        printv("empty task list\n");
     }
 }
 
@@ -50,10 +45,10 @@ void task_init()
 
 void task_create(const char *name, task_func_t func)
 {
-    task_t *task = (task_t *)kalloc();
+    task_t *task = (task_t *)alloc_page(1);
     init_list_head(&task->list);
-    task->kstack = task;
-    task->context.ra = func;
+    task->kstack = (virtual_addr_t)task;
+    task->context.ra = (register_t)func;
     task->context.sp = task->kstack + PGSIZE;
     task->pagetable = kernel_pagetable;
     task->name = name;
