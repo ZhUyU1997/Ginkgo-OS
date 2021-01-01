@@ -97,7 +97,7 @@ static mem_pool_block_t* mem_pool_locate_free(mem_pool_control_t* control, size_
     {
         int ret = mem_pool_alloc_page(pool, control->system);
 
-        if (!ret)
+        if (ret)
             return NULL;
     }
 

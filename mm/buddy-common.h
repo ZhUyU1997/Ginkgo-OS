@@ -3,34 +3,13 @@
 #include <types.h>
 #include <assert.h>
 #include <printv.h>
+#include <compiler.h>
+#include <log.h>
 
 #define type_cast(t, exp) ((t)(exp))
 #define arrary_cast(p, size) (((char(*)[size])(p)))
 
-#define likely(x) __builtin_expect(!!(x), 1)
-#define unlikely(x) __builtin_expect(!!(x), 0)
-
 #define min(x, y) ({typeof(x) _x = (x);typeof(y) _y = (y);(void)(&_x == &_y);_x < _y ? _x : _y; })
-
-#define BUDDY_DEBUG
-#ifdef BUDDY_DEBUG
-#define LOGI(...) printv("[" $((char *)__func__) ":" $(__LINE__) "] "__VA_ARGS__, "\n")
-#define LOGD(...) printv("[" $((char *)__func__) ":" $(__LINE__) "] "__VA_ARGS__, "\n")
-#define LOGW(...) printv("[" $((char *)__func__) ":" $(__LINE__) "] "__VA_ARGS__, "\n")
-#define LOGE(...) printv("[" $((char *)__func__) ":" $(__LINE__) "] "__VA_ARGS__, "\n")
-#define LOGF(...) printv("[" $((char *)__func__) ":" $(__LINE__) "] "__VA_ARGS__, "\n")
-
-#else
-
-#define LOGI(...)
-#define LOGD(...)
-#define LOGW(...) printv("[" $((char *)__func__) ":" $(__LINE__) "] "__VA_ARGS__, "\n")
-#define LOGE(...) printv("[" $((char *)__func__) ":" $(__LINE__) "] "__VA_ARGS__, "\n")
-#define LOGF(...) printv("[" $((char *)__func__) ":" $(__LINE__) "] "__VA_ARGS__, "\n")
-
-#undef assert
-#define assert(...)
-#endif
 
 #define buddy_assert(x, msg) assert((x) && (msg))
 
@@ -71,6 +50,7 @@ static inline int buddy_fls(unsigned int word)
 }
 
 #endif
+
 /* Possibly 64-bit version of buddy_fls. */
 #if defined(CONFIG_64BIT)
 static int buddy_fls_sizet(size_t size)

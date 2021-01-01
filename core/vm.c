@@ -5,6 +5,7 @@
 #include "vm.h"
 #include "kalloc.h"
 #include "string.h"
+#include "log.h"
 
 /*
  * the kernel's page table.
@@ -58,21 +59,21 @@ void kvminithart()
     local_flush_tlb_all();
 }
 
-pte_t *walk(pagetable_t pagetable, uint64 va, int alloc)
+pte_t* walk(pagetable_t pagetable, uint64 va, int alloc)
 {
     if (va >= MAXVA)
-        panic("walk");
+        PANIC("walk");
 
     for (int level = 2; level > 0; level--)
     {
-        pte_t *pte = &pagetable[PX(level, va)];
+        pte_t* pte = &pagetable[PX(level, va)];
         if (*pte & PTE_V)
         {
             pagetable = (pagetable_t)PTE2PA(*pte);
         }
         else
         {
-            if (!alloc || (pagetable = (pde_t *)alloc_page(1)) == 0)
+            if (!alloc || (pagetable = (pde_t*)alloc_page(1)) == 0)
                 return 0;
             memset(pagetable, 0, PGSIZE);
             *pte = PA2PTE(pagetable) | PTE_V;
@@ -83,7 +84,7 @@ pte_t *walk(pagetable_t pagetable, uint64 va, int alloc)
 
 uint64 walkaddr(pagetable_t pagetable, uint64 va)
 {
-    pte_t *pte;
+    pte_t* pte;
     uint64 pa;
 
     if (va >= MAXVA)
@@ -103,22 +104,27 @@ uint64 walkaddr(pagetable_t pagetable, uint64 va)
 void kvmmap(pagetable_t kpgtbl, uint64 va, uint64 pa, uint64 sz, int perm)
 {
     if (mappages(kpgtbl, va, sz, pa, perm) != 0)
-        panic("kvmmap");
+        PANIC("kvmmap");
 }
 
 int mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm)
 {
     uint64 a, last;
-    pte_t *pte;
+    pte_t* pte;
 
     a = PGROUNDDOWN(va);
     last = PGROUNDDOWN(va + size - 1);
     for (;;)
     {
         if ((pte = walk(pagetable, a, 1)) == 0)
+        {
             return -1;
+        }
+
         if (*pte & PTE_V)
-            panic("remap");
+        {
+            LOGE("remap");
+        }
         *pte = PA2PTE(pa) | perm | PTE_V;
         if (a == last)
             break;

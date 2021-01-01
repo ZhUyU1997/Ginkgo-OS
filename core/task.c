@@ -1,7 +1,7 @@
-#include "task.h"
-#include "vm.h"
-#include "printv.h"
-#include "kalloc.h"
+#include <task.h>
+#include <vm.h>
+#include <log.h>
+#include <kalloc.h>
 
 int nextpid = 1;
 
@@ -21,12 +21,12 @@ void schedule()
         task_t *task = container_of(list, task_t, list);
         task_t *old = current;
         current = task;
-        printv("swtch:"$(old->name)"-->"$(current->name)"\n");
+        // LOGI("swtch:"$(old->name)"-->"$(current->name));
         swtch(&old->context, &current->context);
     }
     else
     {
-        printv("empty task list\n");
+        LOGE("empty task list");
     }
 }
 

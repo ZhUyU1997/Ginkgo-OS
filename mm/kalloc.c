@@ -4,6 +4,7 @@
 #include <memlayout.h>
 #include <list.h>
 #include <types.h>
+#include <string.h>
 
 #include <mm/buddy.h>
 #include <mm/mem_pool.h>
@@ -29,6 +30,18 @@ void* malloc(size_t size)
     if (size > MEM_POOL_MAX_SIZE)
         return alloc_page(align_up(size, PAGE_SIZE) >> PAGE_SHIFT);
     return mem_pool_alloc(control, size);
+}
+
+void* calloc(size_t nmemb, size_t size)
+{
+    void* ptr = malloc(nmemb * size);
+
+    if (ptr != NULL)
+    {
+        memset(ptr, 0, nmemb * size);
+    }
+
+    return ptr;
 }
 
 void free(void* ptr)

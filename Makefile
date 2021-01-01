@@ -5,7 +5,7 @@ endif
 CROSS_COMPILE	:= riscv64-linux-gnu-
 export CROSS_COMPILE
 
-W_FLAGS		= -Wall -Werror=implicit-function-declaration
+W_FLAGS		= -Wall -Werror=implicit-function-declaration -Wno-unused-function
 X_CFLAGS	+= -std=gnu11 -O0 -g -ggdb \
 				$(W_FLAGS) \
 				-march=rv64g -mabi=lp64d -mcmodel=medany \
@@ -18,7 +18,7 @@ X_LDFLAGS	+= -z max-page-size=4096 -T kernel.ld -no-pie -nostdlib
 
 X_CLEAN		+= kernel.asm kernel.sym
 NAME		:= kernel
-SRC			+= arch/entry.S arch/kernelvec.S arch/context_switch.S core/*.c mm/*.c
+SRC			+= arch/entry.S arch/kernelvec.S arch/context_switch.S core/*.c core/class/*.c mm/*.c
 
 define CUSTOM_TARGET_CMD
 echo [KERNEL] $@; \
@@ -42,6 +42,9 @@ QEMUOPTS	= -machine virt -bios none -kernel kernel -m 128M -smp 1 -nographic
 
 qemu:
 	$(QEMU) $(QEMUOPTS)
+
+qemu-gdb:
+	$(QEMU) $(QEMUOPTS) -S -gdb tcp::10001,ipv4
 
 kill:
 	kill -9 `pgrep qemu`

@@ -5,6 +5,7 @@
 #include "vm.h"
 #include "printv.h"
 #include "task.h"
+#include "log.h"
 
 #include <stddef.h>
 
@@ -51,14 +52,16 @@ void timerinit()
 int devintr()
 {
     uint64 scause = csr_read(scause);
-    printv("devintr\r\n");
+
+    // LOGI("devintr");
+
     if ((scause & 0x8000000000000000L) &&
         (scause & 0xff) == 9)
     {
         // this is a supervisor external interrupt, via PLIC.
 
         // irq indicates which device interrupted.
-        printv("PLIC");
+        LOGI("PLIC");
         return 1;
     }
     else if (scause == 0x8000000000000001L)
@@ -66,7 +69,7 @@ int devintr()
         // software interrupt from a machine-mode timer interrupt,
         // forwarded by timervec in kernelvec.S.
 
-        printv("timer");
+        // LOGI("timer");
 
         // acknowledge the software interrupt by clearing
         // the SSIP bit in sip.
@@ -82,7 +85,7 @@ int devintr()
 
 void timertrap()
 {
-    printv("timertrap\r\n");
+    // LOGI("timertrap");
     // each CPU has a separate source of timer interrupts.
     int id = csr_read(mhartid);
 
@@ -92,19 +95,19 @@ void timertrap()
 }
 void kerneltrap()
 {
-    printv("kerneltrap\r\n");
+    // LOGI("kerneltrap");
     uint64 sepc = csr_read(sepc);
     uint64 sstatus = csr_read(sstatus);
     uint64 scause = csr_read(scause);
 
     if ((sstatus & SSTATUS_SPP) == 0)
     {
-        panic("kerneltrap: not from supervisor mode");
+        PANIC("kerneltrap: not from supervisor mode");
     }
 
     if (intr_get() != 0)
     {
-        panic("kerneltrap: interrupts enabled");
+        PANIC("kerneltrap: interrupts enabled");
     }
 
     if ((devintr()) == 0)
@@ -112,7 +115,7 @@ void kerneltrap()
         unsigned long spec = csr_read(sepc);
         unsigned long stval = csr_read(stval);
 
-        panic(
+        PANIC(
             "scause:" $(scause) "\n",
             "sepc: " $(spec) "\n",
             "stval: " $(stval) "\n");
@@ -125,7 +128,7 @@ void kerneltrap()
 
 void start()
 {
-    printv("Hello RISC-V!\r\n");
+    LOGI("Hello RISC-V!");
 
     // set M Previous Privilege mode to Supervisor, for mret.
     unsigned long x = csr_read(mstatus);
