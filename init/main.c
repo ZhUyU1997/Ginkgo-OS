@@ -5,14 +5,8 @@
 #include <vm.h>
 #include <task.h>
 #include <log.h>
+#include <trap.h>
 #include <core/class.h>
-
-extern void kernelvec();
-// set up to take exceptions and traps while in the kernel.
-void trapinithart(void)
-{
-    csr_write(stvec, (uint64)kernelvec);
-}
 
 void hello()
 {
@@ -23,12 +17,14 @@ void hello()
 void main()
 {
     LOGI("main");
-    kinit();
-    trapinithart();
+    do_init_trap();
+    do_init_mem();
+    do_init_class();
+
     kvminit();
     kvminithart();
 
-    do_init_class();
+    
     task_init();
     task_create("test0", hello);
 

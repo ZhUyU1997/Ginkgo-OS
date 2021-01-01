@@ -52,7 +52,7 @@ void free(void* ptr)
         mem_pool_free(control, ptr);
 }
 
-void kinit()
+void do_init_mem()
 {
     system = buddy_create(end, (size_t)PHYSTOP - (size_t)end);
     mem_pool_create(control, system);
