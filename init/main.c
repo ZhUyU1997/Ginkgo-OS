@@ -24,7 +24,6 @@ void main()
     kvminit();
     kvminithart();
 
-    
     task_init();
     task_create("test0", hello);
 
