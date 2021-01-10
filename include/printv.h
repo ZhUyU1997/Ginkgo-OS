@@ -18,6 +18,8 @@
 #define PRINT_0(value) _Generic(      \
     (value),                          \
     PRINT_FUNC(s, char *),            \
+    PRINT_FUNC(d, short),               \
+    PRINT_FUNC(u, unsigned short),      \
     PRINT_FUNC(d, int),               \
     PRINT_FUNC(u, unsigned int),      \
     PRINT_FUNC(p, long int),          \
@@ -39,7 +41,10 @@
 PRINT_TEMPLATE(p, const void *);
 PRINT_TEMPLATE(s, const char *);
 PRINT_TEMPLATE(d, const int);
-PRINT_TEMPLATE(u, const unsigned int);
+PRINT_TEMPLATE2(u, const unsigned int)
+{
+    printf("%d", value);
+}
 PRINT_TEMPLATE2(x, const unsigned long int)
 {
     printf("%p", (const void *)value);

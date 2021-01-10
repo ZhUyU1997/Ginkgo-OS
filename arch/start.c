@@ -1,13 +1,15 @@
-#include "types.h"
-#include "riscv.h"
-#include "memlayout.h"
-#include "kalloc.h"
-#include "vm.h"
-#include "printv.h"
-#include "task.h"
-#include "log.h"
+#include <types.h>
+#include <riscv.h>
+#include <memlayout.h>
+#include <kalloc.h>
+#include <vm.h>
+#include <printv.h>
+#include <task.h>
+#include <log.h>
+#include <plic.h>
+#include <uart.h>
+#include <virtio.h>
 
-#include <stddef.h>
 
 #define NCPU 1 // maximum number of CPUs
 
@@ -23,7 +25,7 @@ void timerinit()
 
     // ask the CLINT for a timer interrupt.
     int interval = 10000000; // cycles; about 1/10th second in qemu.
-    *(uint64 *)CLINT_MTIMECMP(id) = *(uint64 *)CLINT_MTIME + interval;
+    *(uint64*)CLINT_MTIMECMP(id) = *(uint64*)CLINT_MTIME + interval;
 
     // prepare information in scratch[] for timervec.
     // scratch[0..2] : space for timervec to save registers.
@@ -61,7 +63,27 @@ int devintr()
         // this is a supervisor external interrupt, via PLIC.
 
         // irq indicates which device interrupted.
-        LOGI("PLIC");
+        int irq = plic_claim();
+
+        if (irq == UART0_IRQ) {
+            uart_interrupt();
+        }
+        else if (irq == VIRTIO0_IRQ) {
+            virtio_disk_intr();
+        }
+        else if (irq == VIRTIO7_IRQ) {
+            LOGD("GPU interrupt");
+            gpu_interrupt(7);
+        }
+        else if (irq) {
+            printf("unexpected interrupt irq=%d\n", irq);
+        }
+
+        // the PLIC allows each device to raise at most one
+        // interrupt at a time; tell the PLIC the device is
+        // now allowed to interrupt again.
+        if (irq)
+            plic_complete(irq);
         return 1;
     }
     else if (scause == 0x8000000000000001L)
@@ -91,8 +113,9 @@ void timertrap()
 
     // ask the CLINT for a timer interrupt.
     int interval = 10000000; // cycles; about 1/10th second in qemu.
-    *(uint64 *)CLINT_MTIMECMP(id) = *(uint64 *)CLINT_MTIME + interval;
+    *(uint64*)CLINT_MTIMECMP(id) = *(uint64*)CLINT_MTIME + interval;
 }
+
 void kerneltrap()
 {
     // LOGI("kerneltrap");

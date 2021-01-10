@@ -14,6 +14,7 @@ typedef uint8 u8_t;
 typedef uint32 u32_t;
 typedef uint64 u64_t;
 typedef uint64 virtual_addr_t;
+typedef uint64 addr_t;
 typedef uint64 size_t;
 typedef uint64 register_t;
 typedef uint64 irq_flags_t;
