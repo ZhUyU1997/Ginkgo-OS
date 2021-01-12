@@ -18,7 +18,7 @@ X_LDFLAGS	+= -z max-page-size=4096 -T kernel.ld -no-pie -nostdlib
 
 X_CLEAN		+= kernel.asm kernel.sym
 NAME		:= kernel
-SRC			+= arch/head.S arch/entry.S arch/context_switch.S arch/start.c arch/vm.c arch/trap.c  init/*.c core/*.c core/class/*.c mm/*.c
+SRC			+= arch/head.S arch/entry.S arch/context_switch.S arch/start.c arch/vm.c arch/trap.c  init/*.c core/*.c core/class/*.c mm/*.c driver/*.c driver/virtio/*.c
 
 define CUSTOM_TARGET_CMD
 echo [KERNEL] $@; \
@@ -28,9 +28,15 @@ $(OD) -t kernel | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > kernel.sym
 endef
 
 QEMU		= qemu-system-riscv64
-QEMUOPTS	= -machine virt -bios none -kernel kernel -m 128M -smp 1 -nographic
-# QEMUOPTS += -drive file=fs.img,if=none,format=raw,id=x0
-# QEMUOPTS += -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
+QEMUOPTS	= -machine virt -bios none -kernel kernel -m 128M -smp 1 -serial stdio
+# QEMUOPTS	+= -nographic
+QEMUOPTS	+= -drive file=fs.img,if=none,format=raw,id=x0
+QEMUOPTS	+= -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
+QEMUOPTS	+= -device virtio-gpu-device
+QEMUOPTS	+= -device virtio-net-device
+QEMUOPTS	+= -device virtio-tablet-device
+QEMUOPTS	+= -device virtio-keyboard-device
+
 # When using -nographic, press 'ctrl-a h' to get some help.
 # C-a h    print this help
 # C-a x    exit emulator

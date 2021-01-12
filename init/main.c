@@ -15,13 +15,15 @@
 void hello()
 {
     LOGI("hello");
-    // char* p = malloc(1024);;
-    // virtio_disk_rw(p, 0, 1024, 0);
-    // p[1024 - 1]  ='\0';
-    // LOGI("Disk Content:"$(p));
-    //     virtio_disk_rw(p, 0, 1024, 0);
-    // p[1024 - 1]  ='\0';
-    // LOGI("Disk Content:"$(p));
+#if 0
+    char* p = malloc(1024);;
+    virtio_disk_rw(p, 0, 1024, 0);
+    p[1024 - 1]  ='\0';
+    LOGI("Disk Content:"$(p));
+        virtio_disk_rw(p, 0, 1024, 0);
+    p[1024 - 1]  ='\0';
+    LOGI("Disk Content:"$(p));
+#endif
     while (1);
 }
 
@@ -38,7 +40,6 @@ void main()
     plicinithart();  // ask PLIC for device interrupts
     uart_init();
     virtio_init();
-    virtio_disk_init();
     task_init();
     task_create("test0", hello);
 

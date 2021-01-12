@@ -100,8 +100,6 @@ struct virtio_blk_req {
     uint64 sector;
 };
 
-void gpu_interrupt(int idx);
+void virtio_handle_interrupt(int irq);
 void virtio_init();
-void virtio_disk_init(void);
-void virtio_disk_intr();
 void virtio_disk_rw(void* addr, uint64 sector, uint32 size, int write);

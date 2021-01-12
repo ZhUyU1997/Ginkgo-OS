@@ -35,9 +35,23 @@ class(virtio_device)
     uint32 device_id;
     virtio_queue_t *queue;
     uint16 ack_used_idx;
+    uint32 (*get_features)(uint32 features);
+    void (*free_desc)(virtio_device * dev, int idx);
 };
 
-class_impl(virtio_device){};
+uint32 virtio_device_get_features(uint32 features)
+{
+    return features;
+}
+
+class_impl(virtio_device){
+    get_features : virtio_device_get_features,
+};
+
+void virtio_device_gpu_free_desc(virtio_device *dev, int idx)
+{
+    free(dev->queue->desc[idx].addr);
+}
 
 class(virtio_device_gpu, virtio_device)
 {
@@ -48,7 +62,51 @@ class(virtio_device_gpu, virtio_device)
 
 class_impl(virtio_device_gpu, virtio_device){};
 
-virtio_device *vdev[MMIO_VIRTIO_NUM];
+constructor(virtio_device_gpu)
+{
+    virtio_device *device = dynamic_cast(virtio_device)(this);
+    device->free_desc = virtio_device_gpu_free_desc;
+}
+
+class(virtio_device_block, virtio_device)
+{
+    uint8 status[VIRTIO_RING_SIZE];
+};
+
+class_impl(virtio_device_block, virtio_device){};
+
+uint32 virtio_device_block_get_features(uint32 features)
+{
+    features &= ~(1 << VIRTIO_BLK_F_RO);
+    features &= ~(1 << VIRTIO_BLK_F_SCSI);
+    features &= ~(1 << VIRTIO_BLK_F_CONFIG_WCE);
+    features &= ~(1 << VIRTIO_BLK_F_MQ);
+    features &= ~(1 << VIRTIO_F_ANY_LAYOUT);
+    features &= ~(1 << VIRTIO_RING_F_EVENT_IDX);
+    features &= ~(1 << VIRTIO_RING_F_INDIRECT_DESC);
+    return features;
+}
+
+void virtio_device_block_free_desc(virtio_device *dev, int idx)
+{
+    virtio_device_block *block = dynamic_cast(virtio_device_block)(dev);
+    uint16 flags = dev->queue->desc[idx].flags;
+    uint16 next = dev->queue->desc[idx].next;
+
+    if ((flags & VIRTIO_DESC_F_WRITE) && (next == 0))
+    {
+        // block->status[idx] = 0;
+    }
+}
+
+constructor(virtio_device_block)
+{
+    virtio_device *device = dynamic_cast(virtio_device)(this);
+    device->get_features = virtio_device_block_get_features;
+    device->free_desc = virtio_device_block_free_desc;
+}
+
+virtio_device *vdev[MMIO_VIRTIO_NUM] = {};
 
 enum virtio_gpu_ctrl_type
 {
@@ -180,18 +238,16 @@ void virtio_desc_new(struct virtio_device *dev, struct virtq_desc *desc)
 
 void virtio_desc_del(struct virtio_device *dev, int idx)
 {
-    struct virtq_desc *desc = &dev->queue->desc[idx];
+    struct virtq_desc *desc = dev->queue->desc;
 
     while (1)
     {
-        int flags = desc->flags;
-        int next = desc->next;
 
-        free(desc->addr);
-        *desc = (struct virtq_desc){};
+        dev->free_desc(dev, idx);
+        desc[idx] = (struct virtq_desc){};
 
-        if (flags & VIRTIO_DESC_F_NEXT)
-            desc = &dev->queue->desc[next];
+        if (desc[idx].flags & VIRTIO_DESC_F_NEXT)
+            idx = desc[idx].next;
         else
             break;
     }
@@ -240,7 +296,7 @@ void virtio_avail_new(virtio_device *dev, int idx)
 
 void gpu_interrupt(int idx)
 {
-    LOGI("gpu_interrupt");
+    LOGI("gpu_interrupt idx:"$(idx));
     write32(VIRTIO7 + VIRTIO_MMIO_INTERRUPT_ACK, read32(VIRTIO7 + VIRTIO_MMIO_INTERRUPT_STATUS) & 0x3);
 
     virtio_queue_t *queue = vdev[idx]->queue;
@@ -269,6 +325,58 @@ static void clear(uint32 *buffer, int w, int h)
             buffer[i * w + j] = 0xffff0000;
         }
     }
+}
+
+void virtio_disk_rw(void *addr, uint64 sector, uint32 size, int write)
+{
+    virtio_device *dev = vdev[0];
+    struct virtio_device_block *block = dynamic_cast(virtio_device_block)(dev);
+
+    // the spec's Section 5.2 says that legacy block operations use
+    // three descriptors: one for type/reserved/sector, one for the
+    // data, one for a 1-byte status result.
+
+    // allocate the three descriptors.
+
+    // format the three descriptors.
+    // qemu's virtio-blk.c reads them.
+
+    struct virtio_blk_req *buf0 = calloc(1, sizeof(struct virtio_blk_req));
+
+    if (write)
+        buf0->type = VIRTIO_BLK_T_OUT; // write the disk
+    else
+        buf0->type = VIRTIO_BLK_T_IN; // read the disk
+    buf0->reserved = 0;
+    buf0->sector = sector;
+
+    uint32 head = dev->idx;
+
+    uint32 flags = 0;
+    if (!write)
+        flags = VIRTIO_DESC_F_WRITE;
+
+    block->status[head] = 0;
+    virtio_desc_new3(dev,
+                     &(struct virtq_desc){
+                         .addr = buf0,
+                         .len = sizeof(struct virtio_blk_req),
+                     },
+                     &(struct virtq_desc){
+                         .addr = addr,
+                         .len = size,
+                         .flags = flags,
+                     },
+                     &(struct virtq_desc){
+                         .addr = (uint64)&block->status[head],
+                         .len = sizeof(uint8),
+                     });
+
+    virtio_avail_new(dev, head);
+
+    write32(dev->addr + VIRTIO_MMIO_QUEUE_NOTIFY, 0);
+    while (block->status[head] == 0xff)
+        ;
 }
 
 void gpu_init(virtio_device *dev)
@@ -440,9 +548,11 @@ void gpu_init(virtio_device *dev)
     write32(dev->addr + VIRTIO_MMIO_QUEUE_NOTIFY, 0);
 }
 
-static int setup_gpu_device(int idx, addr_t addr)
+static int setup_virtio_device(virtio_device *dev)
 {
-    LOGD("idx:" $(idx) " addr:" $(addr));
+    addr_t addr = dev->addr;
+
+    LOGD("addr:" $(addr));
     uint32 status = 0;
 
     // [Driver] Device Initialization
@@ -458,7 +568,7 @@ static int setup_gpu_device(int idx, addr_t addr)
     // bits understood by OS and driver to the device.
     uint32 features = read32(addr + VIRTIO_MMIO_DEVICE_FEATURES);
     LOGD("feature:", $(features));
-    write32(addr + VIRTIO_MMIO_DRIVER_FEATURES, features);
+    write32(addr + VIRTIO_MMIO_DRIVER_FEATURES, dev->get_features(features));
     // 5. Set the FEATURES_OK status bit
     status |= VIRTIO_CONFIG_S_FEATURES_OK;
     write32(addr + VIRTIO_MMIO_STATUS, status);
@@ -531,14 +641,30 @@ static int setup_gpu_device(int idx, addr_t addr)
     status |= VIRTIO_CONFIG_S_DRIVER_OK;
     write32(addr + VIRTIO_MMIO_STATUS, status);
 
-    virtio_device_gpu *gpu = new (virtio_device_gpu);
-    vdev[idx] = dynamic_cast(virtio_device)(gpu);
-    vdev[idx]->addr = addr;
-    vdev[idx]->queue = queue_ptr;
-
-    gpu_init(vdev[idx]);
-
+    dev->queue = queue_ptr;
     return 1;
+}
+
+static int setup_block_device(int idx, addr_t addr)
+{
+    virtio_device_block *block = new (virtio_device_block);
+    virtio_device *dev = dynamic_cast(virtio_device)(block);
+    dev->addr = addr;
+    dev->idx = idx;
+    setup_virtio_device(dev);
+
+    vdev[idx] = dev;
+}
+
+static int setup_gpu_device(int idx, addr_t addr)
+{
+    virtio_device_gpu *gpu = new (virtio_device_gpu);
+    virtio_device *dev = dynamic_cast(virtio_device)(gpu);
+    dev->addr = addr;
+    dev->idx = idx;
+    setup_virtio_device(dev);
+
+    vdev[idx] = dev;
 }
 
 void virtio_init()
@@ -570,6 +696,7 @@ void virtio_init()
                 break;
             case 2:
                 LOGI("block device");
+                setup_block_device(idx, addr);
                 break;
             case 3:
                 LOGI("console");
@@ -607,6 +734,7 @@ void virtio_init()
             case 16:
                 LOGI("GPU device");
                 setup_gpu_device(idx, addr);
+                gpu_init(vdev[idx]);
                 break;
             case 17:
                 LOGI("Timer/Clock device");
@@ -638,4 +766,10 @@ void virtio_init()
             }
         }
     }
+}
+
+void virtio_handle_interrupt(int irq)
+{
+    LOGD("virtio_handle_interrupt");
+    gpu_interrupt(irq - 1);
 }

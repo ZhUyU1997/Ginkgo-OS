@@ -7,6 +7,9 @@
 #include <riscv.h>
 #include <io.h>
 #include <smp.h>
+#include <log.h>
+#include <virtio.h>
+#include <uart.h>
 
 // qemu puts platform-level interrupt controller (PLIC) here.
 #define PLIC_PRIORITY(PLIC) (PLIC + 0x0)
@@ -35,7 +38,7 @@ void plicinithart(void)
     // set uart's enable bit for this hart's S-mode.
     for (int i = 1; i <= 10; i++)
     {
-        write32(PLIC_SENABLE(PLIC_ADDR, hart), read32(PLIC_SENABLE(PLIC_ADDR, hart)) |(1 << i) );
+        write32(PLIC_SENABLE(PLIC_ADDR, hart), read32(PLIC_SENABLE(PLIC_ADDR, hart)) | (1 << i));
     }
     // set this hart's S-mode priority threshold to 0.
     write32(PLIC_SPRIORITY(PLIC_ADDR, hart), 0);
@@ -54,4 +57,30 @@ void plic_complete(int irq)
 {
     int hart = smp_processor_id();
     write32(PLIC_SCLAIM(PLIC_ADDR, hart), irq);
+}
+
+void plic_handle_interrupt()
+{
+    // this is a supervisor external interrupt, via PLIC.
+    // irq indicates which device interrupted.
+    int irq = plic_claim();
+
+    if (irq == UART0_IRQ)
+    {
+        uart_interrupt();
+    }
+    else if (irq >= VIRTIO0_IRQ && irq <= VIRTIO7_IRQ)
+    {
+        virtio_handle_interrupt(irq);
+    }
+    else
+    {
+        printf("unexpected interrupt irq=%d\n", irq);
+    }
+
+    // the PLIC allows each device to raise at most one
+    // interrupt at a time; tell the PLIC the device is
+    // now allowed to interrupt again.
+    if (irq)
+        plic_complete(irq);
 }

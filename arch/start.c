@@ -9,145 +9,12 @@
 #include <plic.h>
 #include <uart.h>
 #include <virtio.h>
-
+#include <trap.h>
 
 #define NCPU 1 // maximum number of CPUs
 
 // entry.S needs one stack per CPU.
 __attribute__((aligned(16))) char stack0[4096 * NCPU];
-
-extern void timervec();
-
-void timerinit()
-{
-    // each CPU has a separate source of timer interrupts.
-    int id = csr_read(mhartid);
-
-    // ask the CLINT for a timer interrupt.
-    int interval = 10000000; // cycles; about 1/10th second in qemu.
-    *(uint64*)CLINT_MTIMECMP(id) = *(uint64*)CLINT_MTIME + interval;
-
-    // prepare information in scratch[] for timervec.
-    // scratch[0..2] : space for timervec to save registers.
-    // scratch[3] : address of CLINT MTIMECMP register.
-    // scratch[4] : desired interval (in cycles) between timer interrupts.
-    // uint64 *scratch = &timer_scratch[id][0];
-    // scratch[3] = CLINT_MTIMECMP(id);
-    // scratch[4] = interval;
-    // csr_write(mscratch, (uint64)scratch);
-
-    // set the machine-mode trap handler.
-    csr_write(mtvec, (uint64)timervec);
-
-    // enable machine-mode interrupts.
-    csr_set(mstatus, MSTATUS_MIE);
-
-    // enable machine-mode timer interrupts.
-    csr_set(mie, MIE_MTIE);
-}
-
-// check if it's an external interrupt or software interrupt,
-// and handle it.
-// returns 2 if timer interrupt,
-// 1 if other device,
-// 0 if not recognized.
-int devintr()
-{
-    uint64 scause = csr_read(scause);
-
-    // LOGI("devintr");
-
-    if ((scause & 0x8000000000000000L) &&
-        (scause & 0xff) == 9)
-    {
-        // this is a supervisor external interrupt, via PLIC.
-
-        // irq indicates which device interrupted.
-        int irq = plic_claim();
-
-        if (irq == UART0_IRQ) {
-            uart_interrupt();
-        }
-        else if (irq == VIRTIO0_IRQ) {
-            virtio_disk_intr();
-        }
-        else if (irq == VIRTIO7_IRQ) {
-            LOGD("GPU interrupt");
-            gpu_interrupt(7);
-        }
-        else if (irq) {
-            printf("unexpected interrupt irq=%d\n", irq);
-        }
-
-        // the PLIC allows each device to raise at most one
-        // interrupt at a time; tell the PLIC the device is
-        // now allowed to interrupt again.
-        if (irq)
-            plic_complete(irq);
-        return 1;
-    }
-    else if (scause == 0x8000000000000001L)
-    {
-        // software interrupt from a machine-mode timer interrupt,
-        // forwarded by timervec in kernelvec.S.
-
-        // LOGI("timer");
-
-        // acknowledge the software interrupt by clearing
-        // the SSIP bit in sip.
-        csr_clear(sip, 2);
-
-        return 2;
-    }
-    else
-    {
-        return 0;
-    }
-}
-
-void timertrap()
-{
-    // LOGI("timertrap");
-    // each CPU has a separate source of timer interrupts.
-    int id = csr_read(mhartid);
-
-    // ask the CLINT for a timer interrupt.
-    int interval = 10000000; // cycles; about 1/10th second in qemu.
-    *(uint64*)CLINT_MTIMECMP(id) = *(uint64*)CLINT_MTIME + interval;
-}
-
-void kerneltrap()
-{
-    // LOGI("kerneltrap");
-    uint64 sepc = csr_read(sepc);
-    uint64 sstatus = csr_read(sstatus);
-    uint64 scause = csr_read(scause);
-
-    if ((sstatus & SSTATUS_SPP) == 0)
-    {
-        PANIC("kerneltrap: not from supervisor mode");
-    }
-
-    if (intr_get() != 0)
-    {
-        PANIC("kerneltrap: interrupts enabled");
-    }
-
-    if ((devintr()) == 0)
-    {
-        unsigned long spec = csr_read(sepc);
-        unsigned long stval = csr_read(stval);
-
-        PANIC(
-            "scause:" $(scause) "\n",
-            "sepc: " $(spec) "\n",
-            "stval: " $(stval) "\n");
-    }
-    // the yield() may have caused some traps to occur,
-    // so restore trap registers for use by kernelvec.S's sepc instruction.
-    csr_write(sepc, sepc);
-    csr_write(sstatus, sstatus);
-}
 
 void start()
 {
@@ -164,20 +31,20 @@ void start()
     void main();
     csr_write(mepc, (uint64)main);
 
-    // disable paging for now.
-    csr_write(satp, 0);
 
     // delegate all interrupts and exceptions to supervisor mode.
     csr_write(medeleg, 0xffff);
     csr_write(mideleg, 0xffff);
-    csr_set(sie, SIE_SEIE | SIE_STIE | SIE_SSIE);
 
-    // ask for clock interrupts.
-    // timerinit();
-    // enable machine-mode interrupts.
-    csr_set(sstatus, SSTATUS_SIE);
     // enable machine-mode timer interrupts.
-    timerinit();
+    do_timer_init();
+
+    // enable machine-mode interrupts.
+    csr_set(mstatus, MSTATUS_MIE);
+
+    // disable paging for now.
+    csr_write(satp, 0);
+
     // keep each CPU's hartid in its tp register, for cpuid().
     int id = csr_read(mhartid);
     register_write(tp, id);
