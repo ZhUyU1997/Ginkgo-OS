@@ -50,12 +50,12 @@ class_impl(virtio_device){
 
 void virtio_device_gpu_free_desc(virtio_device *dev, int idx)
 {
-    free(dev->queue->desc[idx].addr);
+    free((void *)dev->queue->desc[idx].addr);
 }
 
 class(virtio_device_gpu, virtio_device)
 {
-    addr_t framebuffer;
+    void *framebuffer;
     uint32 width;
     uint32 height;
 };
@@ -89,14 +89,14 @@ uint32 virtio_device_block_get_features(uint32 features)
 
 void virtio_device_block_free_desc(virtio_device *dev, int idx)
 {
-    virtio_device_block *block = dynamic_cast(virtio_device_block)(dev);
-    uint16 flags = dev->queue->desc[idx].flags;
-    uint16 next = dev->queue->desc[idx].next;
+    // virtio_device_block *block = dynamic_cast(virtio_device_block)(dev);
+    // uint16 flags = dev->queue->desc[idx].flags;
+    // uint16 next = dev->queue->desc[idx].next;
 
-    if ((flags & VIRTIO_DESC_F_WRITE) && (next == 0))
-    {
-        // block->status[idx] = 0;
-    }
+    // if ((flags & VIRTIO_DESC_F_WRITE) && (next == 0))
+    // {
+    //     // block->status[idx] = 0;
+    // }
 }
 
 constructor(virtio_device_block)
@@ -296,7 +296,7 @@ void virtio_avail_new(virtio_device *dev, int idx)
 
 void gpu_interrupt(int idx)
 {
-    LOGI("gpu_interrupt idx:"$(idx));
+    LOGI("gpu_interrupt idx:" $(idx));
     write32(VIRTIO7 + VIRTIO_MMIO_INTERRUPT_ACK, read32(VIRTIO7 + VIRTIO_MMIO_INTERRUPT_STATUS) & 0x3);
 
     virtio_queue_t *queue = vdev[idx]->queue;
@@ -313,17 +313,6 @@ void gpu_interrupt(int idx)
         __sync_synchronize();
         dev->ack_used_idx += 1;
         __sync_synchronize();
-    }
-}
-
-static void clear(uint32 *buffer, int w, int h)
-{
-    for (int i = 0; i < h; i++)
-    {
-        for (int j = 0; j < w; j++)
-        {
-            buffer[i * w + j] = 0xffff0000;
-        }
     }
 }
 
@@ -359,11 +348,11 @@ void virtio_disk_rw(void *addr, uint64 sector, uint32 size, int write)
     block->status[head] = 0;
     virtio_desc_new3(dev,
                      &(struct virtq_desc){
-                         .addr = buf0,
+                         .addr = (uint64)buf0,
                          .len = sizeof(struct virtio_blk_req),
                      },
                      &(struct virtq_desc){
-                         .addr = addr,
+                         .addr = (uint64)addr,
                          .len = size,
                          .flags = flags,
                      },
@@ -385,9 +374,7 @@ void gpu_init(virtio_device *dev)
     gpu->width = 640;
     gpu->height = 480;
     gpu->framebuffer = malloc(gpu->width * gpu->height * 4);
-
-    clear(gpu->framebuffer, gpu->width, gpu->height);
-
+    memset(gpu->framebuffer, 0xff, gpu->width * gpu->width * 4);
     LOGI("STEP 1: Create a host resource using create 2d");
     // //// STEP 1: Create a host resource using create 2d
     {
@@ -413,11 +400,11 @@ void gpu_init(virtio_device *dev)
         uint32 head = dev->idx;
         virtio_desc_new2(dev,
                          &(struct virtq_desc){
-                             .addr = request,
+                             .addr = (uint64)request,
                              .len = sizeof(struct virtio_gpu_resource_create_2d),
                          },
                          &(struct virtq_desc){
-                             .addr = response,
+                             .addr = (uint64)response,
                              .len = sizeof(struct virtio_gpu_ctrl_hdr),
                          });
 
@@ -439,22 +426,22 @@ void gpu_init(virtio_device *dev)
             .nr_entries = 1,
         };
         *request2 = (struct virtio_gpu_mem_entry){
-            .addr = gpu->framebuffer,
+            .addr = (uint64)gpu->framebuffer,
             .length = gpu->width * gpu->height * 4,
         };
 
         uint32 head = dev->idx;
         virtio_desc_new3(dev,
                          &(struct virtq_desc){
-                             .addr = request1,
+                             .addr = (uint64)request1,
                              .len = sizeof(struct virtio_gpu_resource_attach_backing),
                          },
                          &(struct virtq_desc){
-                             .addr = request2,
+                             .addr = (uint64)request2,
                              .len = sizeof(struct virtio_gpu_mem_entry),
                          },
                          &(struct virtq_desc){
-                             .addr = response,
+                             .addr = (uint64)response,
                              .len = sizeof(struct virtio_gpu_ctrl_hdr),
                          });
 
@@ -478,11 +465,11 @@ void gpu_init(virtio_device *dev)
         uint32 head = dev->idx;
         virtio_desc_new2(dev,
                          &(struct virtq_desc){
-                             .addr = request,
+                             .addr = (uint64)request,
                              .len = sizeof(struct virtio_gpu_set_scanout),
                          },
                          &(struct virtq_desc){
-                             .addr = response,
+                             .addr = (uint64)response,
                              .len = sizeof(struct virtio_gpu_ctrl_hdr),
                          });
 
@@ -506,11 +493,11 @@ void gpu_init(virtio_device *dev)
         uint32 head = dev->idx;
         virtio_desc_new2(dev,
                          &(struct virtq_desc){
-                             .addr = request,
+                             .addr = (uint64)request,
                              .len = sizeof(struct virtio_gpu_transfer_to_host_2d),
                          },
                          &(struct virtq_desc){
-                             .addr = response,
+                             .addr = (uint64)response,
                              .len = sizeof(struct virtio_gpu_ctrl_hdr),
                          });
 
@@ -534,11 +521,11 @@ void gpu_init(virtio_device *dev)
         uint32 head = dev->idx;
         virtio_desc_new2(dev,
                          &(struct virtq_desc){
-                             .addr = request,
+                             .addr = (uint64)request,
                              .len = sizeof(struct virtio_gpu_resource_flush),
                          },
                          &(struct virtq_desc){
-                             .addr = response,
+                             .addr = (uint64)response,
                              .len = sizeof(struct virtio_gpu_ctrl_hdr),
                          });
 
@@ -632,9 +619,9 @@ static int setup_virtio_device(virtio_device *dev)
     // (the OS) and the block device have in common for
     // making and receiving requests.
 
-    addr_t queue_ptr = calloc(1, num_pages * PAGE_SIZE);
+    void *queue_ptr = calloc(1, num_pages * PAGE_SIZE);
     LOGD("queue_ptr:" $(queue_ptr));
-    uint32 queue_pfn = queue_ptr >> PAGE_SHIFT;
+    uint32 queue_pfn = (addr_t)queue_ptr >> PAGE_SHIFT;
     write32(addr + VIRTIO_MMIO_QUEUE_PFN, queue_pfn);
 
     // 8. Set the DRIVER_OK status bit. Device is now "live"
@@ -654,6 +641,7 @@ static int setup_block_device(int idx, addr_t addr)
     setup_virtio_device(dev);
 
     vdev[idx] = dev;
+    return 1;
 }
 
 static int setup_gpu_device(int idx, addr_t addr)
@@ -665,6 +653,7 @@ static int setup_gpu_device(int idx, addr_t addr)
     setup_virtio_device(dev);
 
     vdev[idx] = dev;
+    return 1;
 }
 
 void virtio_init()
