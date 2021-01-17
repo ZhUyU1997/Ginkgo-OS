@@ -8,7 +8,6 @@
 #include <log.h>
 #include <plic.h>
 #include <uart.h>
-#include <virtio.h>
 
 extern void kernelvec();
 extern void timervec();

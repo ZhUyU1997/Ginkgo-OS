@@ -8,7 +8,6 @@
 #include <log.h>
 #include <plic.h>
 #include <uart.h>
-#include <virtio.h>
 #include <trap.h>
 
 #define NCPU 1 // maximum number of CPUs

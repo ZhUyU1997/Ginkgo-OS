@@ -8,7 +8,7 @@
 #include <io.h>
 #include <smp.h>
 #include <log.h>
-#include <virtio.h>
+#include <virtio/virtio.h>
 #include <uart.h>
 
 // qemu puts platform-level interrupt controller (PLIC) here.
@@ -75,7 +75,7 @@ void plic_handle_interrupt()
     }
     else
     {
-        printf("unexpected interrupt irq=%d\n", irq);
+        LOGE("unexpected interrupt irq="$(irq));
     }
 
     // the PLIC allows each device to raise at most one

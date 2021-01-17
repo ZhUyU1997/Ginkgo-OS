@@ -9,32 +9,31 @@
 #include <mm/buddy.h>
 #include <mm/mem_pool.h>
 
-
-static buddy_system_t* system = NULL;
-static mem_pool_control_t* control = &(mem_pool_control_t) {};
+static buddy_system_t *system = NULL;
+static mem_pool_control_t *control = &(mem_pool_control_t){};
 
 extern char end[];
 
-void* alloc_page(size_t count)
+void *alloc_page(size_t count)
 {
     return buddy_alloc_page(system, count);
 }
 
-void free_page(void* ptr)
+void free_page(void *ptr)
 {
     buddy_free_page(system, ptr);
 }
 
-void* malloc(size_t size)
+void *malloc(size_t size)
 {
     if (size > MEM_POOL_MAX_SIZE)
         return alloc_page(align_up(size, PAGE_SIZE) >> PAGE_SHIFT);
     return mem_pool_alloc(control, size);
 }
 
-void* calloc(size_t nmemb, size_t size)
+void *calloc(size_t nmemb, size_t size)
 {
-    void* ptr = malloc(nmemb * size);
+    void *ptr = malloc(nmemb * size);
 
     if (ptr != NULL)
     {
@@ -44,7 +43,7 @@ void* calloc(size_t nmemb, size_t size)
     return ptr;
 }
 
-void free(void* ptr)
+void free(void *ptr)
 {
     if (((size_t)ptr & (PAGE_SIZE - 1)) == 0)
         free_page(ptr);

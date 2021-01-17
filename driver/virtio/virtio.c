@@ -1,4 +1,4 @@
-#include <virtio.h>
+#include <virtio/virtio.h>
 
 #include <types.h>
 #include <riscv.h>
@@ -11,6 +11,8 @@
 
 //https://github.com/sgmarz/osblog/blob/master/risc_v/src/virtio.r
 
+#define VIRTIO_RING_SIZE (1 << 7)
+
 enum
 {
     MMIO_VIRTIO_START = 0x10001000UL,
@@ -20,20 +22,12 @@ enum
     MMIO_VIRTIO_NUM = 8,
 };
 
-typedef struct virtio_queue
-{
-    struct virtq_desc desc[VIRTIO_RING_SIZE];
-    struct virtq_avail avail;
-    char padding[PAGE_SIZE - (sizeof(struct virtq_desc) * VIRTIO_RING_SIZE) - sizeof(struct virtq_avail)];
-    struct virtq_used used;
-} virtio_queue_t;
-
 class(virtio_device)
 {
     int idx;
     addr_t addr;
     uint32 device_id;
-    virtio_queue_t *queue;
+    vring_t queue;
     uint16 ack_used_idx;
     uint32 (*get_features)(uint32 features);
     void (*free_desc)(virtio_device * dev, int idx);
@@ -50,7 +44,7 @@ class_impl(virtio_device){
 
 void virtio_device_gpu_free_desc(virtio_device *dev, int idx)
 {
-    free((void *)dev->queue->desc[idx].addr);
+    free((void *)dev->queue.desc[idx].addr);
 }
 
 class(virtio_device_gpu, virtio_device)
@@ -90,10 +84,10 @@ uint32 virtio_device_block_get_features(uint32 features)
 void virtio_device_block_free_desc(virtio_device *dev, int idx)
 {
     // virtio_device_block *block = dynamic_cast(virtio_device_block)(dev);
-    // uint16 flags = dev->queue->desc[idx].flags;
-    // uint16 next = dev->queue->desc[idx].next;
+    // uint16 flags = dev->queue.desc[idx].flags;
+    // uint16 next = dev->queue.desc[idx].next;
 
-    // if ((flags & VIRTIO_DESC_F_WRITE) && (next == 0))
+    // if ((flags & VRING_DESC_F_WRITE) && (next == 0))
     // {
     //     // block->status[idx] = 0;
     // }
@@ -108,212 +102,67 @@ constructor(virtio_device_block)
 
 virtio_device *vdev[MMIO_VIRTIO_NUM] = {};
 
-enum virtio_gpu_ctrl_type
+void virtio_desc_new(struct virtio_device *dev, struct vring_desc *desc)
 {
-    /* 2d commands */
-    VIRTIO_GPU_CMD_GET_DISPLAY_INFO = 0x0100,
-    VIRTIO_GPU_CMD_RESOURCE_CREATE_2D,
-    VIRTIO_GPU_CMD_RESOURCE_UNREF,
-    VIRTIO_GPU_CMD_SET_SCANOUT,
-    VIRTIO_GPU_CMD_RESOURCE_FLUSH,
-    VIRTIO_GPU_CMD_TRANSFER_TO_HOST_2D,
-    VIRTIO_GPU_CMD_RESOURCE_ATTACH_BACKING,
-    VIRTIO_GPU_CMD_RESOURCE_DETACH_BACKING,
-    VIRTIO_GPU_CMD_GET_CAPSET_INFO,
-    VIRTIO_GPU_CMD_GET_CAPSET,
-    VIRTIO_GPU_CMD_GET_EDID,
-    /* cursor commands */
-    VIRTIO_GPU_CMD_UPDATE_CURSOR = 0x0300,
-    VIRTIO_GPU_CMD_MOVE_CURSOR,
-    /* success responses */
-    VIRTIO_GPU_RESP_OK_NODATA = 0x1100,
-    VIRTIO_GPU_RESP_OK_DISPLAY_INFO,
-    VIRTIO_GPU_RESP_OK_CAPSET_INFO,
-    VIRTIO_GPU_RESP_OK_CAPSET,
-    VIRTIO_GPU_RESP_OK_EDID,
-    /* error responses */
-    VIRTIO_GPU_RESP_ERR_UNSPEC = 0x1200,
-    VIRTIO_GPU_RESP_ERR_OUT_OF_MEMORY,
-    VIRTIO_GPU_RESP_ERR_INVALID_SCANOUT_ID,
-    VIRTIO_GPU_RESP_ERR_INVALID_RESOURCE_ID,
-    VIRTIO_GPU_RESP_ERR_INVALID_CONTEXT_ID,
-    VIRTIO_GPU_RESP_ERR_INVALID_PARAMETER,
-};
-
-#define VIRTIO_GPU_FLAG_FENCE (1 << 0)
-
-struct virtio_gpu_ctrl_hdr
-{
-    uint32 type;
-    uint32 flags;
-    uint64 fence_id;
-    uint32 ctx_id;
-    uint32 padding;
-};
-
-#define VIRTIO_GPU_MAX_SCANOUTS 16
-struct virtio_gpu_rect
-{
-    uint32 x;
-    uint32 y;
-    uint32 width;
-    uint32 height;
-};
-
-struct virtio_gpu_resp_display_info
-{
-    struct virtio_gpu_ctrl_hdr hdr;
-    struct virtio_gpu_display_one
-    {
-        struct virtio_gpu_rect r;
-        uint32 enabled;
-        uint32 flags;
-    } pmodes[VIRTIO_GPU_MAX_SCANOUTS];
-};
-
-enum virtio_gpu_formats
-{
-    VIRTIO_GPU_FORMAT_B8G8R8A8_UNORM = 1,
-    VIRTIO_GPU_FORMAT_B8G8R8X8_UNORM = 2,
-    VIRTIO_GPU_FORMAT_A8R8G8B8_UNORM = 3,
-    VIRTIO_GPU_FORMAT_X8R8G8B8_UNORM = 4,
-    VIRTIO_GPU_FORMAT_R8G8B8A8_UNORM = 67,
-    VIRTIO_GPU_FORMAT_X8B8G8R8_UNORM = 68,
-    VIRTIO_GPU_FORMAT_A8B8G8R8_UNORM = 121,
-    VIRTIO_GPU_FORMAT_R8G8B8X8_UNORM = 134,
-};
-struct virtio_gpu_resource_create_2d
-{
-    struct virtio_gpu_ctrl_hdr hdr;
-    uint32 resource_id;
-    uint32 format;
-    uint32 width;
-    uint32 height;
-};
-
-struct virtio_gpu_resource_attach_backing
-{
-    struct virtio_gpu_ctrl_hdr hdr;
-    uint32 resource_id;
-    uint32 nr_entries;
-};
-
-struct virtio_gpu_mem_entry
-{
-    uint64 addr;
-    uint32 length;
-    uint32 padding;
-};
-
-struct virtio_gpu_set_scanout
-{
-    struct virtio_gpu_ctrl_hdr hdr;
-    struct virtio_gpu_rect r;
-    uint32 scanout_id;
-    uint32 resource_id;
-};
-
-struct virtio_gpu_transfer_to_host_2d
-{
-    struct virtio_gpu_ctrl_hdr hdr;
-    struct virtio_gpu_rect r;
-    uint64 offset;
-    uint32 resource_id;
-    uint32 padding;
-};
-
-struct virtio_gpu_resource_flush
-{
-    struct virtio_gpu_ctrl_hdr hdr;
-    struct virtio_gpu_rect r;
-    uint32 resource_id;
-    uint32 padding;
-};
-
-void virtio_desc_new(struct virtio_device *dev, struct virtq_desc *desc)
-{
-    dev->queue->desc[dev->idx] = *desc;
+    dev->queue.desc[dev->idx] = *desc;
     dev->idx = (dev->idx + 1) % VIRTIO_RING_SIZE;
 }
 
 void virtio_desc_del(struct virtio_device *dev, int idx)
 {
-    struct virtq_desc *desc = dev->queue->desc;
+    struct vring_desc *desc = dev->queue.desc;
 
     while (1)
     {
-
         dev->free_desc(dev, idx);
-        desc[idx] = (struct virtq_desc){};
+        desc[idx] = (struct vring_desc){};
 
-        if (desc[idx].flags & VIRTIO_DESC_F_NEXT)
+        if (desc[idx].flags & VRING_DESC_F_NEXT)
             idx = desc[idx].next;
         else
             break;
     }
 }
 
-void virtio_desc_new2(virtio_device *dev, struct virtq_desc *request, struct virtq_desc *response)
+void virtio_desc_new2(virtio_device *dev, struct vring_desc *request, struct vring_desc *response)
 {
-    request->flags |= VIRTIO_DESC_F_NEXT;
+    request->flags |= VRING_DESC_F_NEXT;
     request->next = (dev->idx + 1) % VIRTIO_RING_SIZE,
-    dev->queue->desc[dev->idx] = *request;
+    dev->queue.desc[dev->idx] = *request;
     dev->idx = (dev->idx + 1) % VIRTIO_RING_SIZE;
     LOGD("dev->idx:" $(dev->idx));
 
-    response->flags |= VIRTIO_DESC_F_WRITE;
-    dev->queue->desc[dev->idx] = *response;
+    response->flags |= VRING_DESC_F_WRITE;
+    dev->queue.desc[dev->idx] = *response;
     dev->idx = (dev->idx + 1) % VIRTIO_RING_SIZE;
 
     LOGD("dev->idx:" $(dev->idx));
 }
 
-void virtio_desc_new3(virtio_device *dev, struct virtq_desc *request1, struct virtq_desc *request2, struct virtq_desc *response)
+void virtio_desc_new3(virtio_device *dev, struct vring_desc *request1, struct vring_desc *request2, struct vring_desc *response)
 {
-    request1->flags |= VIRTIO_DESC_F_NEXT;
+    request1->flags |= VRING_DESC_F_NEXT;
     request1->next = (dev->idx + 1) % VIRTIO_RING_SIZE,
-    dev->queue->desc[dev->idx] = *request1;
+    dev->queue.desc[dev->idx] = *request1;
     dev->idx = (dev->idx + 1) % VIRTIO_RING_SIZE;
 
-    request2->flags |= VIRTIO_DESC_F_NEXT;
+    request2->flags |= VRING_DESC_F_NEXT;
     request2->next = (dev->idx + 1) % VIRTIO_RING_SIZE,
-    dev->queue->desc[dev->idx] = *request2;
+    dev->queue.desc[dev->idx] = *request2;
     dev->idx = (dev->idx + 1) % VIRTIO_RING_SIZE;
 
-    response->flags |= VIRTIO_DESC_F_WRITE;
-    dev->queue->desc[dev->idx] = *response;
+    response->flags |= VRING_DESC_F_WRITE;
+    dev->queue.desc[dev->idx] = *response;
     dev->idx = (dev->idx + 1) % VIRTIO_RING_SIZE;
 }
 
 void virtio_avail_new(virtio_device *dev, int idx)
 {
-    LOGD("idx:" $(idx) " dev->queue->avail.idx:" $(dev->queue->avail.idx));
-    dev->queue->avail.ring[dev->queue->avail.idx % VIRTIO_RING_SIZE] = idx;
+    LOGD("idx:" $(idx) " dev->queue.avail->idx:" $(dev->queue.avail->idx));
+    dev->queue.avail->ring[dev->queue.avail->idx % VIRTIO_RING_SIZE] = idx;
     __sync_synchronize();
-    dev->queue->avail.idx += 1;
+    dev->queue.avail->idx += 1;
     __sync_synchronize();
-}
-
-void gpu_interrupt(int idx)
-{
-    LOGI("gpu_interrupt idx:" $(idx));
-    write32(VIRTIO7 + VIRTIO_MMIO_INTERRUPT_ACK, read32(VIRTIO7 + VIRTIO_MMIO_INTERRUPT_STATUS) & 0x3);
-
-    virtio_queue_t *queue = vdev[idx]->queue;
-    struct virtio_device *dev = vdev[idx];
-
-    LOGD("dev->ack_used_idx:" $(dev->ack_used_idx));
-    LOGD("queue->used.idx:" $(queue->used.idx));
-
-    while (dev->ack_used_idx != queue->used.idx)
-    {
-        LOGD("handle");
-        int idx = queue->used.ring[dev->ack_used_idx % VIRTIO_RING_SIZE].id;
-        virtio_desc_del(dev, idx);
-        __sync_synchronize();
-        dev->ack_used_idx += 1;
-        __sync_synchronize();
-    }
 }
 
 void virtio_disk_rw(void *addr, uint64 sector, uint32 size, int write)
@@ -330,33 +179,33 @@ void virtio_disk_rw(void *addr, uint64 sector, uint32 size, int write)
     // format the three descriptors.
     // qemu's virtio-blk.c reads them.
 
-    struct virtio_blk_req *buf0 = calloc(1, sizeof(struct virtio_blk_req));
+    struct virtio_blk_outhdr *buf0 = calloc(1, sizeof(struct virtio_blk_outhdr));
 
     if (write)
         buf0->type = VIRTIO_BLK_T_OUT; // write the disk
     else
         buf0->type = VIRTIO_BLK_T_IN; // read the disk
-    buf0->reserved = 0;
+    buf0->ioprio = 0;
     buf0->sector = sector;
 
     uint32 head = dev->idx;
 
     uint32 flags = 0;
     if (!write)
-        flags = VIRTIO_DESC_F_WRITE;
+        flags = VRING_DESC_F_WRITE;
 
     block->status[head] = 0;
     virtio_desc_new3(dev,
-                     &(struct virtq_desc){
+                     &(struct vring_desc){
                          .addr = (uint64)buf0,
-                         .len = sizeof(struct virtio_blk_req),
+                         .len = sizeof(struct virtio_blk_outhdr),
                      },
-                     &(struct virtq_desc){
+                     &(struct vring_desc){
                          .addr = (uint64)addr,
                          .len = size,
                          .flags = flags,
                      },
-                     &(struct virtq_desc){
+                     &(struct vring_desc){
                          .addr = (uint64)&block->status[head],
                          .len = sizeof(uint8),
                      });
@@ -394,16 +243,16 @@ void gpu_init(virtio_device *dev)
 
         LOGD("virtio_gpu_resource_create_2d:" $(sizeof(struct virtio_gpu_resource_create_2d)));
         LOGD("virtio_gpu_ctrl_hdr:" $(sizeof(struct virtio_gpu_ctrl_hdr)));
-        LOGD("dev->queue:" $(dev->queue));
-        LOGD("&dev->queue->used:" $(&dev->queue->used));
+        LOGD("&dev->queue:" $(&dev->queue));
+        LOGD("dev->queue.used:" $(dev->queue.used));
 
         uint32 head = dev->idx;
         virtio_desc_new2(dev,
-                         &(struct virtq_desc){
+                         &(struct vring_desc){
                              .addr = (uint64)request,
                              .len = sizeof(struct virtio_gpu_resource_create_2d),
                          },
-                         &(struct virtq_desc){
+                         &(struct vring_desc){
                              .addr = (uint64)response,
                              .len = sizeof(struct virtio_gpu_ctrl_hdr),
                          });
@@ -432,15 +281,15 @@ void gpu_init(virtio_device *dev)
 
         uint32 head = dev->idx;
         virtio_desc_new3(dev,
-                         &(struct virtq_desc){
+                         &(struct vring_desc){
                              .addr = (uint64)request1,
                              .len = sizeof(struct virtio_gpu_resource_attach_backing),
                          },
-                         &(struct virtq_desc){
+                         &(struct vring_desc){
                              .addr = (uint64)request2,
                              .len = sizeof(struct virtio_gpu_mem_entry),
                          },
-                         &(struct virtq_desc){
+                         &(struct vring_desc){
                              .addr = (uint64)response,
                              .len = sizeof(struct virtio_gpu_ctrl_hdr),
                          });
@@ -464,11 +313,11 @@ void gpu_init(virtio_device *dev)
 
         uint32 head = dev->idx;
         virtio_desc_new2(dev,
-                         &(struct virtq_desc){
+                         &(struct vring_desc){
                              .addr = (uint64)request,
                              .len = sizeof(struct virtio_gpu_set_scanout),
                          },
-                         &(struct virtq_desc){
+                         &(struct vring_desc){
                              .addr = (uint64)response,
                              .len = sizeof(struct virtio_gpu_ctrl_hdr),
                          });
@@ -492,11 +341,11 @@ void gpu_init(virtio_device *dev)
 
         uint32 head = dev->idx;
         virtio_desc_new2(dev,
-                         &(struct virtq_desc){
+                         &(struct vring_desc){
                              .addr = (uint64)request,
                              .len = sizeof(struct virtio_gpu_transfer_to_host_2d),
                          },
-                         &(struct virtq_desc){
+                         &(struct vring_desc){
                              .addr = (uint64)response,
                              .len = sizeof(struct virtio_gpu_ctrl_hdr),
                          });
@@ -520,11 +369,11 @@ void gpu_init(virtio_device *dev)
 
         uint32 head = dev->idx;
         virtio_desc_new2(dev,
-                         &(struct virtq_desc){
+                         &(struct vring_desc){
                              .addr = (uint64)request,
                              .len = sizeof(struct virtio_gpu_resource_flush),
                          },
-                         &(struct virtq_desc){
+                         &(struct vring_desc){
                              .addr = (uint64)response,
                              .len = sizeof(struct virtio_gpu_ctrl_hdr),
                          });
@@ -592,7 +441,8 @@ static int setup_virtio_device(virtio_device *dev)
     // divide to truncate the decimal. We don't add 4096,
     // because if it is exactly 4096 bytes, we would get two
     // pages, not one.
-    uint32 num_pages = (sizeof(struct virtio_queue) + PAGE_SIZE - 1) / PAGE_SIZE;
+
+    uint32 num_pages = (vring_size(VIRTIO_RING_SIZE, PAGE_SIZE) + PAGE_SIZE - 1) >> PAGE_SHIFT;
     LOGI("num_pages:" $(num_pages));
     // We allocate a page for each device. This will the the
     // descriptor where we can communicate with the block
@@ -627,8 +477,7 @@ static int setup_virtio_device(virtio_device *dev)
     // 8. Set the DRIVER_OK status bit. Device is now "live"
     status |= VIRTIO_CONFIG_S_DRIVER_OK;
     write32(addr + VIRTIO_MMIO_STATUS, status);
-
-    dev->queue = queue_ptr;
+    vring_init(&dev->queue, VIRTIO_RING_SIZE, queue_ptr, PAGE_SHIFT);
     return 1;
 }
 
@@ -759,6 +608,27 @@ void virtio_init()
 
 void virtio_handle_interrupt(int irq)
 {
-    LOGD("virtio_handle_interrupt");
-    gpu_interrupt(irq - 1);
+    LOGD("");
+
+    int idx = irq - 1;
+    addr_t addr = MMIO_VIRTIO_START + MMIO_VIRTIO_STRIDE * idx;
+
+    LOGI("idx:" $(idx));
+    write32(addr + VIRTIO_MMIO_INTERRUPT_ACK, read32(addr + VIRTIO_MMIO_INTERRUPT_STATUS) & 0x3);
+
+    vring_t *queue = &vdev[idx]->queue;
+    struct virtio_device *dev = vdev[idx];
+
+    LOGD("dev->ack_used_idx:" $(dev->ack_used_idx));
+    LOGD("queue->used->idx:" $(queue->used->idx));
+
+    while (dev->ack_used_idx != queue->used->idx)
+    {
+        LOGD("handle");
+        int idx = queue->used->ring[dev->ack_used_idx % VIRTIO_RING_SIZE].id;
+        virtio_desc_del(dev, idx);
+        __sync_synchronize();
+        dev->ack_used_idx += 1;
+        __sync_synchronize();
+    }
 }
