@@ -89,8 +89,6 @@ static mem_pool_block_t* mem_pool_locate_free(mem_pool_control_t* control, size_
     int f_index = size_log2 - MEM_POOL_MIN_SIZE_LOG2;
     int s_index = (size >> (size_log2 - shift)) & ((1UL << shift) - 1);
 
-    LOGD("f_index:" $(f_index) " s_index:" $(s_index));
-
     mem_pool_t* pool = &control->pool[f_index][s_index];
 
     if (list_empty(&pool->free_block))

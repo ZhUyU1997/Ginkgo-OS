@@ -3,9 +3,9 @@
 #include <compiler.h>
 
 #if 1
-extern void add_preempt_count(int val);
-extern void sub_preempt_count(int val);
-extern long preempt_count();
+// extern void add_preempt_count(int val);
+// extern void sub_preempt_count(int val);
+// extern long preempt_count();
 
 #else
 

@@ -4,7 +4,7 @@
         #
         # push all registers, call kerneltrap(), restore, return.
         #
-.globl kerneltrap
+.globl riscv64_handle_exception
 .globl timertrap
 .globl kernelvec
 .align 4
@@ -46,7 +46,7 @@ kernelvec:
         sd t6, 240(sp)
 
 	// call the C trap handler in trap.c
-        call kerneltrap
+        call riscv64_handle_exception
 
         // restore registers.
         ld ra, 0(sp)

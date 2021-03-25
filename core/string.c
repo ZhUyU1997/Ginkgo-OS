@@ -1,8 +1,9 @@
-#include "types.h"
+#include <types.h>
+#include <malloc.h>
 
-void* memset(void* dst, int c, uint32 n)
+void *memset(void *dst, int c, uint32 n)
 {
-    char* cdst = (char*)dst;
+    char *cdst = (char *)dst;
     int i;
     for (i = 0; i < n; i++)
     {
@@ -11,9 +12,9 @@ void* memset(void* dst, int c, uint32 n)
     return dst;
 }
 
-int memcmp(const void* v1, const void* v2, uint32 n)
+int memcmp(const void *v1, const void *v2, uint32 n)
 {
-    const uchar* s1, * s2;
+    const uchar *s1, *s2;
 
     s1 = v1;
     s2 = v2;
@@ -27,10 +28,10 @@ int memcmp(const void* v1, const void* v2, uint32 n)
     return 0;
 }
 
-void* memmove(void* dst, const void* src, uint32 n)
+void *memmove(void *dst, const void *src, uint32 n)
 {
-    const char* s;
-    char* d;
+    const char *s;
+    char *d;
 
     s = src;
     d = dst;
@@ -49,12 +50,12 @@ void* memmove(void* dst, const void* src, uint32 n)
 }
 
 // memcpy exists to placate GCC.  Use memmove.
-void* memcpy(void* dst, const void* src, uint32 n)
+void *memcpy(void *dst, const void *src, uint32 n)
 {
     return memmove(dst, src, n);
 }
 
-int strncmp(const char* p, const char* q, uint32 n)
+int strncmp(const char *p, const char *q, uint32 n)
 {
     while (n > 0 && *p && *p == *q)
         n--, p++, q++;
@@ -63,9 +64,9 @@ int strncmp(const char* p, const char* q, uint32 n)
     return (uchar)*p - (uchar)*q;
 }
 
-char* strncpy(char* s, const char* t, int n)
+char *strncpy(char *s, const char *t, int n)
 {
-    char* os;
+    char *os;
 
     os = s;
     while (n-- > 0 && (*s++ = *t++) != 0)
@@ -76,9 +77,9 @@ char* strncpy(char* s, const char* t, int n)
 }
 
 // Like strncpy but guaranteed to NUL-terminate.
-char* safestrcpy(char* s, const char* t, int n)
+char *safestrcpy(char *s, const char *t, int n)
 {
-    char* os;
+    char *os;
 
     os = s;
     if (n <= 0)
@@ -89,11 +90,46 @@ char* safestrcpy(char* s, const char* t, int n)
     return os;
 }
 
-int strlen(const char* s)
+int strlen(const char *s)
 {
     int n;
 
     for (n = 0; s[n]; n++)
         ;
     return n;
+}
+
+int strcmp(const char *s1, const char *s2)
+{
+    int res;
+
+    while (1)
+    {
+        if ((res = *s1 - *s2++) != 0 || !*s1++)
+            break;
+    }
+    return res;
+}
+
+char *strcpy(char *dest, const char *src)
+{
+    char *tmp = dest;
+
+    while ((*dest++ = *src++) != '\0')
+        ;
+    return tmp;
+}
+
+char *strdup(const char *s)
+{
+    char *p;
+
+    if (!s)
+        return NULL;
+
+    p = malloc(strlen(s) + 1);
+    if (p)
+        return (strcpy(p, s));
+
+    return NULL;
 }

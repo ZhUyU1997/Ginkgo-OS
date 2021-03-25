@@ -1,0 +1,19 @@
+[
+    <plic_irqchip_t>{
+        name: "riscv-plic-irqchip",
+        interrupt-base: 1,
+        interrupt-count: 10,
+    },
+    <virtio_block_t> {
+        device_id: 2,
+        virtio-mmio-bus: 0,
+        interrupt: 1,
+    },
+    <virtio_framebuffer_t> {
+        device_id: 16,
+        virtio-mmio-bus: 1,
+        interrupt: 2,
+        width: 640,
+        height: 480,
+    },
+]

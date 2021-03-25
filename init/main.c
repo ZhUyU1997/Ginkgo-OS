@@ -9,22 +9,15 @@
 #include <core/class.h>
 #include <plic.h>
 #include <uart.h>
-#include <virtio.h>
 #include <malloc.h>
+#include <core/device.h>
+#include <hmap.h>
 
 void hello()
 {
     LOGI("hello");
-#if 0
-    char* p = malloc(1024);;
-    virtio_disk_rw(p, 0, 1024, 0);
-    p[1024 - 1]  ='\0';
-    LOGI("Disk Content:"$(p));
-        virtio_disk_rw(p, 0, 1024, 0);
-    p[1024 - 1]  ='\0';
-    LOGI("Disk Content:"$(p));
-#endif
-    while (1);
+    while (1)
+        ;
 }
 
 void main()
@@ -36,10 +29,8 @@ void main()
 
     kvminit();
     kvminithart();
-    plicinit();      // set up interrupt controller
-    plicinithart();  // ask PLIC for device interrupts
-    uart_init();
-    virtio_init();
+
+    do_init_device();
     task_init();
     task_create("test0", hello);
 

@@ -6,8 +6,7 @@
 #include <printv.h>
 #include <task.h>
 #include <log.h>
-#include <plic.h>
-#include <uart.h>
+#include <interrupt/interrupt.h>
 
 extern void kernelvec();
 extern void timervec();
@@ -35,58 +34,43 @@ void do_timer_init()
     csr_set(mie, MIE_MTIE);
 }
 
-// check if it's an external interrupt or software interrupt,
-// and handle it.
-// returns 2 if timer interrupt,
-// 1 if other device,
-// 0 if not recognized.
-int devce_interrupt()
+
+void riscv64_handle_exception()
 {
-    uint64 scause = csr_read(scause);
-
-    // LOGI("devce_interrupt");
-
-    if ((scause & 0x8000000000000000L) && (scause & 0xff) == 9)
-    {
-        plic_handle_interrupt();
-        return 1;
-    }
-    else if (scause == 0x8000000000000001L)
-    {
-        // software interrupt from a machine-mode timer interrupt,
-        // forwarded by timervec in kernelvec.S.
-
-        // LOGI("timer");
-
-        // acknowledge the software interrupt by clearing
-        // the SSIP bit in sip.
-        csr_clear(sip, 2);
-        return 2;
-    }
-    else
-    {
-        return 0;
-    }
-}
-
-void kerneltrap()
-{
-    // LOGI("kerneltrap");
+    // LOGI();
     uint64 sepc = csr_read(sepc);
     uint64 sstatus = csr_read(sstatus);
     uint64 scause = csr_read(scause);
 
     if ((sstatus & SSTATUS_SPP) == 0)
     {
-        PANIC("kerneltrap: not from supervisor mode");
+        PANIC("not from supervisor mode");
     }
 
     if (intr_get() != 0)
     {
-        PANIC("kerneltrap: interrupts enabled");
+        PANIC("interrupts enabled");
     }
 
-    if ((devce_interrupt()) == 0)
+    // LOGI("devce_interrupt");
+    unsigned long cause = scause & ~(1UL << 63);
+    if ((scause & 0x8000000000000000L))
+    {
+        if (cause == 9)
+            interrupt_handle_exception();
+        else if (cause == 1)
+        {
+            // software interrupt from a machine-mode timer interrupt,
+            // forwarded by timervec in kernelvec.S.
+
+            // LOGI("timer");
+
+            // acknowledge the software interrupt by clearing
+            // the SSIP bit in sip.
+            csr_clear(sip, 2);
+        }
+    }
+    else
     {
         unsigned long spec = csr_read(sepc);
         unsigned long stval = csr_read(stval);

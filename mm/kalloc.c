@@ -51,6 +51,19 @@ void free(void *ptr)
         mem_pool_free(control, ptr);
 }
 
+void *realloc(void *old, size_t size)
+{
+    void *new = malloc(size);
+
+    if (new)
+    {
+        memcpy(new, old, size);
+        free(old);
+    }
+
+    return new;
+}
+
 void do_init_mem()
 {
     system = buddy_create(end, (size_t)PHYSTOP - (size_t)end);

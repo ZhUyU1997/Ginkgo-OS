@@ -3,6 +3,7 @@
 #include <string.h>
 #include <log.h>
 #include <malloc.h>
+#include <assert.h>
 
 #define LOG(fmt, arg...) printf(fmt, ##args)
 
@@ -101,13 +102,12 @@ char *new_class_object(type_index type)
 {
 	char *base = calloc(1, __class_table_start[type].full_size);
 	//printf("fullsize:%d obj=%X\n",table[type].full_size,obj);
-	if (base)
-	{
-		char *obj = base + __class_table_start[type].full_size - __class_table_start[type].size;
-		object_init(type, type, obj);
-		return obj;
-	}
-	return NULL;
+	if (!base)
+		return NULL;
+
+	char *obj = base + __class_table_start[type].full_size - __class_table_start[type].size;
+	object_init(type, type, obj);
+	return obj;
 }
 
 static void object_exit(void *obj)
@@ -173,7 +173,13 @@ static unsigned int set_class_table_info(struct class_table_info *info)
 {
 	unsigned int size = 0;
 	if (info->type != object_t_class_type)
+	{
+		if (info == &__class_table_start[info->parent_type])
+		{
+			PANIC("Can't inhert itself: " $(info->name));
+		}
 		size = set_class_table_info(&__class_table_start[info->parent_type]);
+	}
 	info->full_size = size + sizeof(struct class_head_info) + info->size;
 	return info->full_size;
 }

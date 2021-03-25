@@ -5,7 +5,7 @@ endif
 CROSS_COMPILE	:= riscv64-linux-gnu-
 export CROSS_COMPILE
 
-W_FLAGS		= -Wall -Werror=implicit-function-declaration -Wno-unused-function
+W_FLAGS		= -Wall -Werror=implicit-function-declaration -Wno-unused-function -Werror=return-type
 X_CFLAGS	+= -std=gnu11 -O3 -g -ggdb \
 				$(W_FLAGS) \
 				-march=rv64g -mabi=lp64d -mcmodel=medany \
@@ -18,7 +18,11 @@ X_LDFLAGS	+= -z max-page-size=4096 -T kernel.ld -no-pie -nostdlib
 
 X_CLEAN		+= kernel.asm kernel.sym
 NAME		:= kernel
-SRC			+= arch/head.S arch/entry.S arch/context_switch.S arch/start.c arch/vm.c arch/trap.c  init/*.c core/*.c core/class/*.c mm/*.c driver/*.c driver/virtio/*.c
+SRC			+= arch/head.S arch/entry.S arch/context_switch.S \
+				arch/start.c arch/vm.c arch/exception.c arch/device.c arch/dtree.S \
+				init/*.c core/*.c core/class/*.c mm/*.c driver/*.c driver/virtio/*.c \
+				lib/*.c lib/libc/*.c \
+				lib/xjil/*.c
 
 define CUSTOM_TARGET_CMD
 echo [KERNEL] $@; \
@@ -32,10 +36,10 @@ QEMUOPTS	= -machine virt -bios none -kernel kernel -m 128M -smp 1 -serial stdio
 # QEMUOPTS	+= -nographic
 QEMUOPTS	+= -drive file=fs.img,if=none,format=raw,id=x0
 QEMUOPTS	+= -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
-QEMUOPTS	+= -device virtio-gpu-device
-QEMUOPTS	+= -device virtio-net-device
-QEMUOPTS	+= -device virtio-tablet-device
-QEMUOPTS	+= -device virtio-keyboard-device
+QEMUOPTS	+= -device virtio-gpu-device,bus=virtio-mmio-bus.1
+QEMUOPTS	+= -device virtio-net-device,bus=virtio-mmio-bus.2
+QEMUOPTS	+= -device virtio-tablet-device,bus=virtio-mmio-bus.3
+QEMUOPTS	+= -device virtio-keyboard-device,bus=virtio-mmio-bus.4
 
 # When using -nographic, press 'ctrl-a h' to get some help.
 # C-a h    print this help

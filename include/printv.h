@@ -18,6 +18,7 @@
 #define PRINT_0(value) _Generic(      \
     (value),                          \
     PRINT_FUNC(s, char *),            \
+    PRINT_FUNC(s, const char *),            \
     PRINT_FUNC(d, short),               \
     PRINT_FUNC(u, unsigned short),      \
     PRINT_FUNC(d, int),               \
