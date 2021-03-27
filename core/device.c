@@ -40,10 +40,9 @@ void do_init_device()
                 type_index index = hmap_search(map, tag);
                 device_t *dev = dynamic_cast(device_t)(new_class_object(index));
                 int ret = dev->probe(dev, value);
-                if(!ret)
-                {
+                
+                if(ret != 0)
                     delete(dev);
-                }
             }
         }
     }

@@ -36,8 +36,7 @@ static inline u64_t block_size(block_t *blk)
 
 class(virtio_block_t, block_t)
 {
-    struct virtio_device_data dev;
-    uint8 status[VIRTIO_RING_SIZE];
+    struct virtio_device_data *data;
 };
 
 class_impl(virtio_block_t, block_t){};
@@ -45,38 +44,21 @@ class_impl(virtio_block_t, block_t){};
 u64_t virtio_block_read(block_t *blk, u8_t *buf, u64_t blkno, u64_t blkcnt)
 {
     virtio_block_t *vblk = dynamic_cast(virtio_block_t)(blk);
-    struct virtio_device_data *dev = &vblk->dev;
+    struct virtio_device_data *data = vblk->data;
     struct virtio_blk_outhdr *buf0 = calloc(1, sizeof(struct virtio_blk_outhdr));
 
     buf0->type = VIRTIO_BLK_T_IN;
     buf0->ioprio = 0;
     buf0->sector = blkno;
 
-    uint32 head = dev->idx;
+    uint32 head = virtio_desc_get_index(data);
+    uint8 *status = malloc(sizeof(uint8));
 
-    vblk->status[head] = 0;
+    virtio_desc_new3(data, VRING_DESC(buf0), VRING_DESC_LEN_FLAG(buf, blkcnt * block_size(blk), VRING_DESC_F_WRITE), VRING_DESC(status));
+    virtio_avail_new(data, head);
 
-    struct vring_desc descs[3] = {
-        {
-            .addr = (uint64)buf0,
-            .len = sizeof(struct virtio_blk_outhdr),
-        },
-        {
-            .addr = (uint64)buf,
-            .len = blkcnt * block_size(blk),
-            .flags = VRING_DESC_F_WRITE,
-        },
-        {
-            .addr = (uint64)&vblk->status[head],
-            .len = sizeof(uint8),
-        },
-    };
-
-    virtio_desc_new3(dev, descs + 0, descs + 1, descs + 1);
-    virtio_avail_new(dev, head);
-
-    write32(dev->addr + VIRTIO_MMIO_QUEUE_NOTIFY, 0);
-    while (vblk->status[head] == 0xff)
+    virtio_mmio_notify(data);
+    while (*status == 0xff)
         ;
     return blkcnt;
 }
@@ -84,37 +66,21 @@ u64_t virtio_block_read(block_t *blk, u8_t *buf, u64_t blkno, u64_t blkcnt)
 u64_t virtio_block_write(block_t *blk, u8_t *buf, u64_t blkno, u64_t blkcnt)
 {
     virtio_block_t *vblk = dynamic_cast(virtio_block_t)(blk);
-    struct virtio_device_data *dev = &vblk->dev;
+    struct virtio_device_data *data = vblk->data;
     struct virtio_blk_outhdr *buf0 = calloc(1, sizeof(struct virtio_blk_outhdr));
 
     buf0->type = VIRTIO_BLK_T_OUT;
     buf0->ioprio = 0;
     buf0->sector = blkno;
 
-    uint32 head = dev->idx;
+    uint32 head = virtio_desc_get_index(data);
+    uint8 *status = malloc(sizeof(uint8));
 
-    vblk->status[head] = 0;
+    virtio_desc_new3(data, VRING_DESC(buf0), VRING_DESC_LEN(buf, blkcnt * block_size(blk)), VRING_DESC(status));
+    virtio_avail_new(data, head);
 
-    struct vring_desc descs[3] = {
-        {
-            .addr = (uint64)buf0,
-            .len = sizeof(struct virtio_blk_outhdr),
-        },
-        {
-            .addr = (uint64)buf,
-            .len = blkcnt * block_size(blk),
-        },
-        {
-            .addr = (uint64)&vblk->status[head],
-            .len = sizeof(uint8),
-        },
-    };
-
-    virtio_desc_new3(dev, descs + 0, descs + 1, descs + 1);
-    virtio_avail_new(dev, head);
-
-    write32(dev->addr + VIRTIO_MMIO_QUEUE_NOTIFY, 0);
-    while (vblk->status[head] == 0xff)
+    virtio_mmio_notify(data);
+    while (*status == 0xff)
         ;
     return blkcnt;
 }
@@ -138,21 +104,24 @@ static uint32 virtio_block_get_features(uint32 features)
 int virtio_block_probe(device_t *this, xjil_value_t *value)
 {
     virtio_block_t *vblk = dynamic_cast(virtio_block_t)(this);
-    vblk->dev.device_id = xjil_read_int(value, "device_id", -1);
-    vblk->dev.virtio_mmio_bus = xjil_read_int(value, "virtio-mmio-bus", -1);
+    uint32 device_id = xjil_read_int(value, "device_id", -1);
+    int virtio_mmio_bus = xjil_read_int(value, "virtio-mmio-bus", -1);
 
-    if (vblk->dev.device_id == -1)
+    if (device_id == -1)
     {
         LOGE("device_id == -1");
         return -1;
     }
 
-    if (virtio_mmio_search_device(&vblk->dev))
+    struct virtio_device_data *data = virtio_mmio_search_device(device_id, virtio_mmio_bus);
+    
+    if (!data)
     {
         return -1;
     }
 
-    virtio_device_setup(&vblk->dev, virtio_block_get_features);
+    vblk->data = data;
+    virtio_device_setup(vblk->data, virtio_block_get_features);
     return 0;
 }
 

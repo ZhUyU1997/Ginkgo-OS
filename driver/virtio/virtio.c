@@ -1,3 +1,5 @@
+#include "virtio-internal.h"
+
 #include <virtio/virtio.h>
 
 #include <types.h>
@@ -7,10 +9,11 @@
 #include <log.h>
 #include <string.h>
 #include <malloc.h>
+#include <assert.h>
 
 //https://github.com/sgmarz/osblog/blob/master/risc_v/src/virtio.rs
 
-class_impl(virtio_mmio_t, device_t){};
+struct virtio_device_data mmio_device_data[MMIO_VIRTIO_NUM] = {0};
 
 void virtio_desc_new(struct virtio_device_data *data, struct vring_desc *desc, __virtio16 flags)
 {
@@ -62,6 +65,16 @@ void virtio_avail_new(struct virtio_device_data *data, int idx)
     __sync_synchronize();
     avail->idx += 1;
     __sync_synchronize();
+}
+
+int virtio_desc_get_index(struct virtio_device_data *data)
+{
+    return data->idx;
+}
+
+void virtio_mmio_notify(struct virtio_device_data *data)
+{
+    write32(data->addr + VIRTIO_MMIO_QUEUE_NOTIFY, 0);
 }
 
 int virtio_device_setup(struct virtio_device_data *data, uint32 (*get_features)(uint32 features))
@@ -166,9 +179,9 @@ void virtio_device_interrupt_ack(struct virtio_device_data *data)
     write32(addr + VIRTIO_MMIO_INTERRUPT_ACK, read32(addr + VIRTIO_MMIO_INTERRUPT_STATUS) & 0x3);
 }
 
-int virtio_mmio_search_device(struct virtio_device_data *data)
+struct virtio_device_data *virtio_mmio_search_device(uint32 _device_id, int virtio_mmio_bus)
 {
-    addr_t addr = MMIO_VIRTIO_START + data->virtio_mmio_bus * MMIO_VIRTIO_STRIDE;
+    addr_t addr = MMIO_VIRTIO_START + virtio_mmio_bus * MMIO_VIRTIO_STRIDE;
     uint32 magic_value = read32(addr + VIRTIO_MMIO_MAGIC_VALUE);
     uint32 version = read32(addr + VIRTIO_MMIO_VERSION);
     uint32 device_id = read32(addr + VIRTIO_MMIO_DEVICE_ID);
@@ -181,53 +194,46 @@ int virtio_mmio_search_device(struct virtio_device_data *data)
     {
         LOGI("not virtio.");
     }
-    else if (data->device_id == device_id)
+    else if (device_id == _device_id)
     {
-        data->addr = addr;
-        return 0;
+        if (virtio_mmio_bus < MMIO_VIRTIO_NUM)
+        {
+            struct virtio_device_data *data = &mmio_device_data[virtio_mmio_bus];
+            data->virtio_mmio_bus = virtio_mmio_bus;
+            data->device_id = device_id;
+            data->addr = addr;
+            return data;
+        }
     }
-    return -1;
+    return NULL;
 }
 
-void virtio_mmio_prob(struct driver_t *this, void *desc)
+void virtio_device_irq_handler(struct virtio_device_data *data, void (*free_desc)(struct vring_desc *desc))
 {
-    for (addr_t addr = MMIO_VIRTIO_START; addr <= MMIO_VIRTIO_END; addr += MMIO_VIRTIO_STRIDE)
+    assert(data && free_desc);
+    virtio_device_interrupt_ack(data);
+
+    vring_t *queue = &data->queue;
+    while (data->ack_used_idx != queue->used->idx)
     {
-        uint32 magic_value = read32(addr + VIRTIO_MMIO_MAGIC_VALUE);
-        uint32 version = read32(addr + VIRTIO_MMIO_VERSION);
-        uint32 device_id = read32(addr + VIRTIO_MMIO_DEVICE_ID);
-        uint32 vendor_id = read32(addr + VIRTIO_MMIO_VENDOR_ID);
+        int idx = queue->used->ring[data->ack_used_idx % VIRTIO_RING_SIZE].id;
 
-        // 0x74_72_69_76 is "virt" in little endian, so in reality
-        // it is triv. All VirtIO devices have this attached to the
-        // MagicValue register (offset 0x000)
-        if (magic_value != 0x74726976)
-        {
-            LOGI("not virtio.");
-        }
-        else
-        {
-            int idx = (addr - MMIO_VIRTIO_START) / MMIO_VIRTIO_STRIDE;
+        struct vring_desc *desc = data->queue.desc;
 
-            switch (device_id)
-            {
-            case 0:
-                LOGI("reserved (invalid)");
+        while (1)
+        {
+            uint16_t flags = desc[idx].flags;
+            free_desc(desc + idx);
+            desc[idx] = (struct vring_desc){};
+
+            if (flags & VRING_DESC_F_NEXT)
+                idx = desc[idx].next;
+            else
                 break;
-            case 2:
-            {
-                LOGI("block device");
-                break;
-            }
-            case 16:
-            {
-                LOGI("GPU device");
-                break;
-            }
-            default:
-                LOGI("unknown device type.");
-                break;
-            }
         }
+
+        __sync_synchronize();
+        data->ack_used_idx += 1;
+        __sync_synchronize();
     }
 }

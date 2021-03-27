@@ -23,10 +23,6 @@ Qemu:
 #include <core/class.h>
 #include <core/device.h>
 
-#define VIRTIO_RING_SIZE (1 << 7)
-
-typedef void (*virtio_device_handle)(device_t *dev, int idx);
-
 struct virtio_device_data
 {
     addr_t addr;
@@ -43,20 +39,14 @@ void virtio_desc_new2(struct virtio_device_data *data, struct vring_desc *reques
 void virtio_desc_new3(struct virtio_device_data *data, struct vring_desc *request1, struct vring_desc *request2, struct vring_desc *response);
 void virtio_avail_new(struct virtio_device_data *data, int idx);
 int virtio_device_setup(struct virtio_device_data *data, uint32 (*get_features)(uint32 features));
-int virtio_mmio_search_device(struct virtio_device_data *data);
+struct virtio_device_data * virtio_mmio_search_device(uint32 device_id, int virtio_mmio_bus);
 void virtio_device_interrupt_ack(struct virtio_device_data *data);
+int virtio_desc_get_index(struct virtio_device_data *data);
+void virtio_mmio_notify(struct virtio_device_data *data);
+void virtio_device_irq_handler(struct virtio_device_data *data, void (*free_desc)(struct vring_desc *desc));
 
-enum
-{
-    MMIO_VIRTIO_START = 0x10001000UL,
-    MMIO_VIRTIO_END = 0x10008000UL,
-    MMIO_VIRTIO_STRIDE = 0x1000UL,
-    MMIO_VIRTIO_MAGIC = 0x74726976UL,
-    MMIO_VIRTIO_NUM = 8,
-};
+#define VRING_DESC(data) &(struct vring_desc){.addr = (uint64)data,.len = sizeof(*data),}
+#define VRING_DESC_LEN(data, _len) &(struct vring_desc){.addr = (uint64)data,.len = _len,}
+#define VRING_DESC_LEN_FLAG(data, _len, _flags) &(struct vring_desc){.addr = (uint64)data,.len = _len, .flags = _flags}
 
-class(virtio_mmio_t, device_t)
-{
-    device_t *dev[MMIO_VIRTIO_NUM];
-    virtio_device_handle handle[MMIO_VIRTIO_NUM];
-};
+
