@@ -11,7 +11,6 @@ Qemu:
 #pragma once
 
 #include <types.h>
-
 #include <virtio/virtio_types.h>
 #include <virtio/virtio_config.h>
 #include <virtio/virtio_ids.h>
@@ -23,15 +22,7 @@ Qemu:
 #include <core/class.h>
 #include <core/device.h>
 
-struct virtio_device_data
-{
-    addr_t addr;
-    vring_t queue;
-    uint32 device_id;
-    int idx;
-    int virtio_mmio_bus;
-    uint16 ack_used_idx;
-};
+struct virtio_device_data;
 
 void virtio_desc_new(struct virtio_device_data *data, struct vring_desc *desc, __virtio16 flags);
 void virtio_desc_del(struct virtio_device_data *data, int idx);

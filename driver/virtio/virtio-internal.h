@@ -1,6 +1,19 @@
 #pragma once
 
+#include <types.h>
+#include <virtio/virtio_ring.h>
+
 #define VIRTIO_RING_SIZE (1 << 7)
+
+struct virtio_device_data
+{
+    addr_t addr;
+    vring_t queue;
+    uint32 device_id;
+    int idx;
+    int virtio_mmio_bus;
+    uint16 ack_used_idx;
+};
 
 enum
 {
