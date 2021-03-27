@@ -35,8 +35,8 @@ struct virtio_device_data
 
 void virtio_desc_new(struct virtio_device_data *data, struct vring_desc *desc, __virtio16 flags);
 void virtio_desc_del(struct virtio_device_data *data, int idx);
-void virtio_desc_new2(struct virtio_device_data *data, struct vring_desc *request, struct vring_desc *response);
-void virtio_desc_new3(struct virtio_device_data *data, struct vring_desc *request1, struct vring_desc *request2, struct vring_desc *response);
+void virtio_send_command_2(struct virtio_device_data *data, struct vring_desc *request, struct vring_desc *response);
+void virtio_send_command_3(struct virtio_device_data *data, struct vring_desc *request1, struct vring_desc *request2, struct vring_desc *response);
 void virtio_avail_new(struct virtio_device_data *data, int idx);
 int virtio_device_setup(struct virtio_device_data *data, uint32 (*get_features)(uint32 features));
 struct virtio_device_data * virtio_mmio_search_device(uint32 device_id, int virtio_mmio_bus);

@@ -31,7 +31,7 @@ u64_t virtio_block_read(block_t *blk, u8_t *buf, u64_t blkno, u64_t blkcnt)
     uint32 head = virtio_desc_get_index(data);
     uint8 *status = malloc(sizeof(uint8));
 
-    virtio_desc_new3(data, VRING_DESC(buf0), VRING_DESC_LEN_FLAG(buf, blkcnt * block_size(blk), VRING_DESC_F_WRITE), VRING_DESC(status));
+    virtio_send_command_3(data, VRING_DESC(buf0), VRING_DESC_LEN_FLAG(buf, blkcnt * block_size(blk), VRING_DESC_F_WRITE), VRING_DESC(status));
     virtio_avail_new(data, head);
 
     virtio_mmio_notify(data);
@@ -53,7 +53,7 @@ u64_t virtio_block_write(block_t *blk, u8_t *buf, u64_t blkno, u64_t blkcnt)
     uint32 head = virtio_desc_get_index(data);
     uint8 *status = malloc(sizeof(uint8));
 
-    virtio_desc_new3(data, VRING_DESC(buf0), VRING_DESC_LEN(buf, blkcnt * block_size(blk)), VRING_DESC(status));
+    virtio_send_command_3(data, VRING_DESC(buf0), VRING_DESC_LEN(buf, blkcnt * block_size(blk)), VRING_DESC(status));
     virtio_avail_new(data, head);
 
     virtio_mmio_notify(data);

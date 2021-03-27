@@ -12,6 +12,7 @@
 #include <assert.h>
 
 //https://github.com/sgmarz/osblog/blob/master/risc_v/src/virtio.rs
+//https://github.com/wblixin6017/zircon/tree/master/system/dev/bus/virtio
 
 struct virtio_device_data mmio_device_data[MMIO_VIRTIO_NUM] = {0};
 
@@ -44,17 +45,23 @@ void virtio_desc_del(struct virtio_device_data *data, int idx)
     }
 }
 
-void virtio_desc_new2(struct virtio_device_data *data, struct vring_desc *request, struct vring_desc *response)
+void virtio_send_command_2(struct virtio_device_data *data, struct vring_desc *request, struct vring_desc *response)
 {
+    uint32 head = virtio_desc_get_index(data);
+
     virtio_desc_new(data, request, VRING_DESC_F_NEXT);
     virtio_desc_new(data, response, VRING_DESC_F_WRITE);
+    virtio_avail_new(data, head);
 }
 
-void virtio_desc_new3(struct virtio_device_data *data, struct vring_desc *request1, struct vring_desc *request2, struct vring_desc *response)
+void virtio_send_command_3(struct virtio_device_data *data, struct vring_desc *request1, struct vring_desc *request2, struct vring_desc *response)
 {
+    uint32 head = virtio_desc_get_index(data);
+
     virtio_desc_new(data, request1, VRING_DESC_F_NEXT);
     virtio_desc_new(data, request2, VRING_DESC_F_NEXT);
     virtio_desc_new(data, response, VRING_DESC_F_WRITE);
+    virtio_avail_new(data, head);
 }
 
 void virtio_avail_new(struct virtio_device_data *data, int idx)
