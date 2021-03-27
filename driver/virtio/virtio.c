@@ -13,12 +13,13 @@
 
 //https://github.com/sgmarz/osblog/blob/master/risc_v/src/virtio.rs
 //https://github.com/wblixin6017/zircon/tree/master/system/dev/bus/virtio
+//https://github.com/yiannigiannaris/xv6-riscv-window/tree/master/kernel
 
 struct virtio_device_data mmio_device_data[MMIO_VIRTIO_NUM] = {0};
 
 void virtio_desc_new(struct virtio_device_data *data, struct vring_desc *desc, __virtio16 flags)
 {
-    if (flags == VRING_DESC_F_NEXT)
+    if (flags & VRING_DESC_F_NEXT)
         desc->next = (data->idx + 1) % VIRTIO_RING_SIZE;
     else
         desc->next = 0;
@@ -182,8 +183,14 @@ int virtio_device_setup(struct virtio_device_data *data, uint32 (*get_features)(
 
 void virtio_device_interrupt_ack(struct virtio_device_data *data)
 {
-    addr_t addr = MMIO_VIRTIO_START + MMIO_VIRTIO_STRIDE * data->virtio_mmio_bus;
+    addr_t addr = data->addr;
     write32(addr + VIRTIO_MMIO_INTERRUPT_ACK, read32(addr + VIRTIO_MMIO_INTERRUPT_STATUS) & 0x3);
+}
+
+void* virtio_device_get_configuration_layout(struct virtio_device_data *data)
+{
+    addr_t addr = data->addr;
+    return addr + VIRTIO_MMIO_CONFIG;
 }
 
 struct virtio_device_data *virtio_mmio_search_device(uint32 _device_id, int virtio_mmio_bus)
@@ -230,13 +237,12 @@ void virtio_device_irq_handler(struct virtio_device_data *data, void (*free_desc
         while (1)
         {
             uint16_t flags = desc[idx].flags;
+            uint16_t next = desc[idx].next;
             free_desc(desc + idx);
-            desc[idx] = (struct vring_desc){};
 
-            if (flags & VRING_DESC_F_NEXT)
-                idx = desc[idx].next;
-            else
+            if (!(flags & VRING_DESC_F_NEXT))
                 break;
+            idx = next;
         }
 
         __sync_synchronize();

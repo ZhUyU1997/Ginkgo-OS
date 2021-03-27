@@ -35,6 +35,7 @@ void virtio_device_interrupt_ack(struct virtio_device_data *data);
 int virtio_desc_get_index(struct virtio_device_data *data);
 void virtio_mmio_notify(struct virtio_device_data *data);
 void virtio_device_irq_handler(struct virtio_device_data *data, void (*free_desc)(struct vring_desc *desc));
+void* virtio_device_get_configuration_layout(struct virtio_device_data *data);
 
 #define VRING_DESC(data) &(struct vring_desc){.addr = (uint64)data,.len = sizeof(*data),}
 #define VRING_DESC_LEN(data, _len) &(struct vring_desc){.addr = (uint64)data,.len = _len,}

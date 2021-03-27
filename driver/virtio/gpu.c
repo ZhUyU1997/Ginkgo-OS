@@ -39,7 +39,7 @@ static uint32 get_features(uint32 features)
 static void create_2d_resource(struct virtio_device_data *data, uint32_t resource_id, uint32_t width, uint32_t height)
 {
     struct virtio_gpu_resource_create_2d *request = calloc(1, sizeof(struct virtio_gpu_resource_create_2d));
-    struct virtio_gpu_ctrl_hdr *response = calloc(1, sizeof(struct virtio_gpu_resource_create_2d));
+    struct virtio_gpu_ctrl_hdr *response = calloc(1, sizeof(struct virtio_gpu_ctrl_hdr));
 
     *request = (struct virtio_gpu_resource_create_2d){
         .hdr = (struct virtio_gpu_ctrl_hdr){
@@ -50,7 +50,6 @@ static void create_2d_resource(struct virtio_device_data *data, uint32_t resourc
         .width = width,
         .height = height,
     };
-
     virtio_send_command_2(data, VRING_DESC(request), VRING_DESC(response));
 }
 
@@ -58,7 +57,7 @@ static void attach_backing(struct virtio_device_data *data, uint32_t resource_id
 {
     struct virtio_gpu_resource_attach_backing *request1 = calloc(1, sizeof(struct virtio_gpu_resource_attach_backing));
     struct virtio_gpu_mem_entry *request2 = calloc(1, sizeof(struct virtio_gpu_mem_entry));
-    struct virtio_gpu_ctrl_hdr *response = calloc(1, sizeof(struct virtio_gpu_resource_create_2d));
+    struct virtio_gpu_ctrl_hdr *response = calloc(1, sizeof(struct virtio_gpu_ctrl_hdr));
 
     *request1 = (struct virtio_gpu_resource_attach_backing){
         .hdr = (struct virtio_gpu_ctrl_hdr){
@@ -75,49 +74,83 @@ static void attach_backing(struct virtio_device_data *data, uint32_t resource_id
     virtio_send_command_3(data, VRING_DESC(request1), VRING_DESC(request2), VRING_DESC(response));
 }
 
-static void set_scanout(struct virtio_device_data *data, uint32_t resource_id, uint32_t width, uint32_t height)
+static void set_scanout(struct virtio_device_data *data, uint32_t resource_id, uint32_t scanout_id, uint32_t x, uint32_t y, uint32_t width, uint32_t height)
 {
     struct virtio_gpu_set_scanout *request = calloc(1, sizeof(struct virtio_gpu_set_scanout));
-    struct virtio_gpu_ctrl_hdr *response = calloc(1, sizeof(struct virtio_gpu_resource_create_2d));
+    struct virtio_gpu_ctrl_hdr *response = calloc(1, sizeof(struct virtio_gpu_ctrl_hdr));
 
     *request = (struct virtio_gpu_set_scanout){
         .hdr = (struct virtio_gpu_ctrl_hdr){
             .type = VIRTIO_GPU_CMD_SET_SCANOUT,
         },
-        .r = (struct virtio_gpu_rect){0, 0, width, height},
+        .r = (struct virtio_gpu_rect){x, y, width, height},
         .resource_id = resource_id,
+        .scanout_id = scanout_id,
     };
 
     virtio_send_command_2(data, VRING_DESC(request), VRING_DESC(response));
 }
 
-static void transfer_to_host_2d(struct virtio_device_data *data, uint32_t resource_id, uint32_t width, uint32_t height)
+static void transfer_to_host_2d(struct virtio_device_data *data, uint32_t resource_id, uint32_t x, uint32_t y, uint32_t width, uint32_t height)
 {
     struct virtio_gpu_transfer_to_host_2d *request = calloc(1, sizeof(struct virtio_gpu_transfer_to_host_2d));
-    struct virtio_gpu_ctrl_hdr *response = calloc(1, sizeof(struct virtio_gpu_resource_create_2d));
+    struct virtio_gpu_ctrl_hdr *response = calloc(1, sizeof(struct virtio_gpu_ctrl_hdr));
 
     *request = (struct virtio_gpu_transfer_to_host_2d){
         .hdr = (struct virtio_gpu_ctrl_hdr){
             .type = VIRTIO_GPU_CMD_TRANSFER_TO_HOST_2D,
         },
-        .r = (struct virtio_gpu_rect){0, 0, width, height},
+        .r = (struct virtio_gpu_rect){x, y, width, height},
         .resource_id = resource_id,
     };
 
     virtio_send_command_2(data, VRING_DESC(request), VRING_DESC(response));
 }
 
-static void flush_resource(struct virtio_device_data *data, uint32_t resource_id, uint32_t width, uint32_t height)
+static void flush_resource(struct virtio_device_data *data, uint32_t resource_id, uint32_t x, uint32_t y, uint32_t width, uint32_t height)
 {
     struct virtio_gpu_resource_flush *request = calloc(1, sizeof(struct virtio_gpu_resource_flush));
-    struct virtio_gpu_ctrl_hdr *response = calloc(1, sizeof(struct virtio_gpu_resource_create_2d));
+    struct virtio_gpu_ctrl_hdr *response = calloc(1, sizeof(struct virtio_gpu_ctrl_hdr));
 
     *request = (struct virtio_gpu_resource_flush){
         .hdr = (struct virtio_gpu_ctrl_hdr){
             .type = VIRTIO_GPU_CMD_RESOURCE_FLUSH,
         },
-        .r = (struct virtio_gpu_rect){0, 0, width, height},
+        .r = (struct virtio_gpu_rect){x, y, width, height},
         .resource_id = resource_id,
+    };
+
+    virtio_send_command_2(data, VRING_DESC(request), VRING_DESC(response));
+}
+
+static void update_cursor(struct virtio_device_data *data, uint32_t resource_id, uint32_t scanout_id, uint32_t x, uint32_t y)
+{
+    struct virtio_gpu_update_cursor *request = calloc(1, sizeof(struct virtio_gpu_update_cursor));
+    struct virtio_gpu_ctrl_hdr *response = calloc(1, sizeof(struct virtio_gpu_ctrl_hdr));
+
+    *request = (struct virtio_gpu_update_cursor){
+        .hdr = (struct virtio_gpu_ctrl_hdr){
+            .type = VIRTIO_GPU_CMD_UPDATE_CURSOR,
+            .fence_id = 1,
+        },
+        .pos = (struct virtio_gpu_cursor_pos){
+            .scanout_id = scanout_id,
+            .x = x,
+            .y = y,
+        },
+        .resource_id = resource_id,
+    };
+
+    virtio_send_command_2(data, VRING_DESC(request), VRING_DESC(response));
+}
+
+static void get_display_info(struct virtio_device_data *data)
+{
+    struct virtio_gpu_ctrl_hdr *request = calloc(1, sizeof(struct virtio_gpu_ctrl_hdr));
+    struct virtio_gpu_resp_display_info *response = calloc(1, sizeof(struct virtio_gpu_resp_display_info));
+
+    *request = (struct virtio_gpu_ctrl_hdr){
+        .type = VIRTIO_GPU_CMD_GET_DISPLAY_INFO,
     };
 
     virtio_send_command_2(data, VRING_DESC(request), VRING_DESC(response));
@@ -128,30 +161,97 @@ static void virtio_framebuffer_init(framebuffer_t *this)
     virtio_framebuffer_t *fb = dynamic_cast(virtio_framebuffer_t)(this);
     struct virtio_device_data *data = fb->data;
     fb->surface = surface_create(this->width, this->height, 4);
-
     memset(fb->surface->pixels, 0xff, this->width * this->width * 4);
 
     uint32_t resource_id = 1;
+    get_display_info(data);
+
+    struct virtio_gpu_config *config = (struct virtio_gpu_config*)virtio_device_get_configuration_layout(data);
+	LOGI("events_read:"$(config->events_read));
+	LOGI("events_clear:"$(config->events_clear));
+	LOGI("num_scanouts:"$(config->num_scanouts));
+	LOGI("num_capsets:"$(config->num_capsets));
 
     LOGI("STEP 1: Create a host resource using create 2d");
     create_2d_resource(data, resource_id, this->width, this->height);
     LOGI("STEP 2: Attach backing");
     attach_backing(data, resource_id, fb->surface->pixels, this->width * this->height * 4);
     LOGI("STEP 3: Set scanout");
-    set_scanout(data, resource_id, this->width, this->height);
+    set_scanout(data, resource_id, 0, 0, 0, this->width, this->height);
     LOGI("STEP 4: Transfer to host");
-    transfer_to_host_2d(data, resource_id, this->width, this->height);
+    transfer_to_host_2d(data, resource_id, 0, 0, this->width, this->height);
     LOGI("Step 5: Flush");
-    flush_resource(data, resource_id, this->width, this->height);
+    flush_resource(data, resource_id, 0, 0, this->width, this->height);
+
+    virtio_mmio_notify(data);
+
+    for (volatile int i = 0; i < 1000; i++)
+        ;
+    LOGI();
+    {
+        struct surface_t *surface = surface_create(64, 64, 4);
+        memset(surface->pixels, 0x80, surface->width * surface->width * 4);
+
+        resource_id = 4;
+        create_2d_resource(data, resource_id, surface->width, surface->height);
+        attach_backing(data, resource_id, surface->pixels, surface->width * surface->height * 4);
+        // set_scanout(data, resource_id, 0, 0, 0, surface->width, surface->height);
+
+        transfer_to_host_2d(data, resource_id, 0, 0, surface->width - 0, surface->height);
+        flush_resource(data, resource_id, 0, 0, surface->width - 0, surface->height);
+        
+        // update_cursor(data, resource_id, 0, 0, 0);
+    }
     virtio_mmio_notify(data);
 }
 
 static void free_desc(struct vring_desc *desc)
 {
-    uint32_t type;
 
-    free(desc->addr);
-    LOGI();
+    struct virtio_gpu_ctrl_hdr *hdr = (struct virtio_gpu_ctrl_hdr *)desc->addr;
+    uint32_t type = hdr->type;
+
+    switch (type)
+    {
+    case VIRTIO_GPU_RESP_OK_NODATA:
+        LOGI("VIRTIO_GPU_RESP_OK_NODATA");
+        break;
+    case VIRTIO_GPU_RESP_OK_DISPLAY_INFO:
+        LOGI("VIRTIO_GPU_RESP_OK_DISPLAY_INFO");
+        struct virtio_gpu_resp_display_info *info = (struct virtio_gpu_resp_display_info *)hdr;
+        break;
+    case VIRTIO_GPU_RESP_OK_CAPSET_INFO:
+        LOGI("VIRTIO_GPU_RESP_OK_CAPSET_INFO");
+        break;
+    case VIRTIO_GPU_RESP_OK_CAPSET:
+        LOGI("VIRTIO_GPU_RESP_OK_CAPSET");
+        break;
+    case VIRTIO_GPU_RESP_OK_EDID:
+        LOGI("VIRTIO_GPU_RESP_OK_EDID");
+        break;
+    case VIRTIO_GPU_RESP_ERR_UNSPEC:
+        LOGI("VIRTIO_GPU_RESP_ERR_UNSPEC");
+        break;
+    case VIRTIO_GPU_RESP_ERR_OUT_OF_MEMORY:
+        LOGI("VIRTIO_GPU_RESP_ERR_OUT_OF_MEMORY");
+        break;
+    case VIRTIO_GPU_RESP_ERR_INVALID_SCANOUT_ID:
+        LOGI("VIRTIO_GPU_RESP_ERR_INVALID_SCANOUT_ID");
+        break;
+    case VIRTIO_GPU_RESP_ERR_INVALID_RESOURCE_ID:
+        LOGI("VIRTIO_GPU_RESP_ERR_INVALID_RESOURCE_ID");
+        break;
+    case VIRTIO_GPU_RESP_ERR_INVALID_CONTEXT_ID:
+        LOGI("VIRTIO_GPU_RESP_ERR_INVALID_CONTEXT_ID");
+        break;
+    case VIRTIO_GPU_RESP_ERR_INVALID_PARAMETER:
+        LOGI("VIRTIO_GPU_RESP_ERR_INVALID_PARAMETER");
+        break;
+
+    default:
+        break;
+    }
+    free(hdr);
 }
 
 static void irq_handler(virtio_framebuffer_t *vfb)
