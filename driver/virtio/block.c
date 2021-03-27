@@ -8,31 +8,8 @@
 #include <string.h>
 #include <malloc.h>
 #include <core/class.h>
+#include <block/block.h>
 
-class(block_t, device_t)
-{
-    /* The size of block */
-    u64_t blksz;
-
-    /* The total count of block */
-    u64_t blkcnt;
-
-    /* Read block device, return the block counts of reading */
-    u64_t (*read)(block_t * blk, u8_t * buf, u64_t blkno, u64_t blkcnt);
-
-    /* Write block device, return the block counts of writing */
-    u64_t (*write)(block_t * blk, u8_t * buf, u64_t blkno, u64_t blkcnt);
-
-    /* Sync cache to block device */
-    void (*sync)(block_t * blk);
-};
-
-class_impl(block_t, device_t){};
-
-static inline u64_t block_size(block_t *blk)
-{
-    return (blk->blksz);
-}
 
 class(virtio_block_t, block_t)
 {
