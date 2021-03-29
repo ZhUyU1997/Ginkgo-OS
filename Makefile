@@ -40,6 +40,7 @@ QEMUOPTS	+= -device virtio-gpu-device,bus=virtio-mmio-bus.1
 QEMUOPTS	+= -device virtio-net-device,bus=virtio-mmio-bus.2
 QEMUOPTS	+= -device virtio-tablet-device,bus=virtio-mmio-bus.3
 QEMUOPTS	+= -device virtio-keyboard-device,bus=virtio-mmio-bus.4
+QEMUOPTS	+= -device virtio-mouse-device,bus=virtio-mmio-bus.5
 
 # When using -nographic, press 'ctrl-a h' to get some help.
 # C-a h    print this help
@@ -50,7 +51,7 @@ QEMUOPTS	+= -device virtio-keyboard-device,bus=virtio-mmio-bus.4
 # C-a c    switch between console and monitor
 # C-a C-a  sends C-a
 
-qemu:
+qemu: 
 	$(QEMU) $(QEMUOPTS)
 
 qemu-gdb:

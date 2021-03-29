@@ -131,7 +131,26 @@ static void update_cursor(struct virtio_device_data *data, uint32_t resource_id,
     *request = (struct virtio_gpu_update_cursor){
         .hdr = (struct virtio_gpu_ctrl_hdr){
             .type = VIRTIO_GPU_CMD_UPDATE_CURSOR,
-            .fence_id = 1,
+        },
+        .pos = (struct virtio_gpu_cursor_pos){
+            .scanout_id = scanout_id,
+            .x = x,
+            .y = y,
+        },
+        .resource_id = resource_id,
+    };
+
+    virtio_send_command_2(data, VRING_DESC(request), VRING_DESC(response));
+}
+
+static void move_cursor(struct virtio_device_data *data, uint32_t resource_id, uint32_t scanout_id, uint32_t x, uint32_t y)
+{
+    struct virtio_gpu_update_cursor *request = calloc(1, sizeof(struct virtio_gpu_update_cursor));
+    struct virtio_gpu_ctrl_hdr *response = calloc(1, sizeof(struct virtio_gpu_ctrl_hdr));
+
+    *request = (struct virtio_gpu_update_cursor){
+        .hdr = (struct virtio_gpu_ctrl_hdr){
+            .type = VIRTIO_GPU_CMD_MOVE_CURSOR,
         },
         .pos = (struct virtio_gpu_cursor_pos){
             .scanout_id = scanout_id,
@@ -166,11 +185,11 @@ static void virtio_framebuffer_init(framebuffer_t *this)
     uint32_t resource_id = 1;
     get_display_info(data);
 
-    struct virtio_gpu_config *config = (struct virtio_gpu_config*)virtio_device_get_configuration_layout(data);
-	LOGI("events_read:"$(config->events_read));
-	LOGI("events_clear:"$(config->events_clear));
-	LOGI("num_scanouts:"$(config->num_scanouts));
-	LOGI("num_capsets:"$(config->num_capsets));
+    struct virtio_gpu_config *config = (struct virtio_gpu_config *)virtio_device_get_configuration_layout(data);
+    LOGI("events_read:" $(config->events_read));
+    LOGI("events_clear:" $(config->events_clear));
+    LOGI("num_scanouts:" $(config->num_scanouts));
+    LOGI("num_capsets:" $(config->num_capsets));
 
     LOGI("STEP 1: Create a host resource using create 2d");
     create_2d_resource(data, resource_id, this->width, this->height);
@@ -183,25 +202,6 @@ static void virtio_framebuffer_init(framebuffer_t *this)
     LOGI("Step 5: Flush");
     flush_resource(data, resource_id, 0, 0, this->width, this->height);
 
-    virtio_mmio_notify(data);
-
-    for (volatile int i = 0; i < 1000; i++)
-        ;
-    LOGI();
-    {
-        struct surface_t *surface = surface_create(64, 64, 4);
-        memset(surface->pixels, 0x80, surface->width * surface->width * 4);
-
-        resource_id = 4;
-        create_2d_resource(data, resource_id, surface->width, surface->height);
-        attach_backing(data, resource_id, surface->pixels, surface->width * surface->height * 4);
-        // set_scanout(data, resource_id, 0, 0, 0, surface->width, surface->height);
-
-        transfer_to_host_2d(data, resource_id, 0, 0, surface->width - 0, surface->height);
-        flush_resource(data, resource_id, 0, 0, surface->width - 0, surface->height);
-        
-        // update_cursor(data, resource_id, 0, 0, 0);
-    }
     virtio_mmio_notify(data);
 }
 
@@ -219,6 +219,12 @@ static void free_desc(struct vring_desc *desc)
     case VIRTIO_GPU_RESP_OK_DISPLAY_INFO:
         LOGI("VIRTIO_GPU_RESP_OK_DISPLAY_INFO");
         struct virtio_gpu_resp_display_info *info = (struct virtio_gpu_resp_display_info *)hdr;
+        for (int i = 0; i < VIRTIO_GPU_MAX_SCANOUTS; i++)
+        {
+            // LOGI("[" $(info->pmodes[i].r.x) "," $(info->pmodes[i].r.y) "," $(info->pmodes[i].r.width) "," $(info->pmodes[i].r.height) "]");
+            // LOGI("enabled:" $(info->pmodes[i].enabled));
+            // LOGI("flags:" $(info->pmodes[i].flags));
+        }
         break;
     case VIRTIO_GPU_RESP_OK_CAPSET_INFO:
         LOGI("VIRTIO_GPU_RESP_OK_CAPSET_INFO");
