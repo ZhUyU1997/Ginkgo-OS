@@ -74,12 +74,12 @@ static void plic_irqchip_dispatch(irqchip_t *chip)
 
     if ((offset >= 0) && (offset < chip->nirq))
     {
-        if (!chip->handler[offset].func)
+        if (!chip->desc[offset].func)
         {
             PANIC("chip->handler[offset].func == NULL");
         }
 
-        (chip->handler[offset].func)(chip->handler[offset].data);
+        (chip->desc[offset].func)(chip->desc[offset].data);
     }
     else
     {
@@ -101,7 +101,7 @@ static int plic_irqchip_probe(device_t *this, xjil_value_t *value)
     if ((chip->base < 0) || (chip->nirq <= 0))
         return -1;
 
-    chip->handler = (struct irq_handler_t *)calloc(1, sizeof(struct irq_handler_t) * chip->nirq);
+    chip->desc = create_interrupt_desc(chip->nirq);
 
     for (int i = chip->base; i < chip->base + chip->nirq; i++)
     {
@@ -131,5 +131,3 @@ constructor(plic_irqchip_t)
     dynamic_cast(irqchip_t)(this)->disable = plic_irqchip_disable;
     dynamic_cast(irqchip_t)(this)->dispatch = plic_irqchip_dispatch;
 }
-
-register_driver(plic_irqchip_t);

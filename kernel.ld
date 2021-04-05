@@ -44,13 +44,6 @@ SECTIONS
 		PROVIDE(__class_table_end = .);
 	}
 
-    .driver.type.index ALIGN(8) :
-	{
-		PROVIDE(__driver_type_index_table_start = .);
-		KEEP(*(.driver.type.index))
-		PROVIDE(__driver_type_index_table_end = .);
-	}
-
     .dtree ALIGN(8) :
 	{
 		PROVIDE(__dtree_start = .);

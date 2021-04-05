@@ -205,7 +205,7 @@ static void virtio_framebuffer_init(framebuffer_t *this)
     virtio_mmio_notify(data);
 }
 
-static void free_desc(struct vring_desc *desc)
+static void free_desc(struct vring_desc *desc, void *data)
 {
 
     struct virtio_gpu_ctrl_hdr *hdr = (struct virtio_gpu_ctrl_hdr *)desc->addr;
@@ -264,7 +264,7 @@ static void irq_handler(virtio_framebuffer_t *vfb)
 {
     struct virtio_device_data *data = vfb->data;
     virtio_device_interrupt_ack(data);
-    virtio_device_irq_handler(data, free_desc);
+    virtio_device_irq_handler(data, free_desc, NULL);
 }
 
 int virtio_framebuffer_probe(device_t *this, xjil_value_t *value)
@@ -313,5 +313,3 @@ constructor(virtio_framebuffer_t)
     dynamic_cast(framebuffer_t)(this)->destroy = virtio_framebuffer_destroy;
     dynamic_cast(framebuffer_t)(this)->present = virtio_framebuffer_present;
 }
-
-register_driver(virtio_framebuffer_t);

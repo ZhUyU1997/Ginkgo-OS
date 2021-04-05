@@ -8,6 +8,7 @@
         device_id: 2,
         virtio-mmio-bus: 0,
         interrupt: 1,
+        name: "virtio-block"
     },
     <virtio_framebuffer_t> {
         device_id: 16,

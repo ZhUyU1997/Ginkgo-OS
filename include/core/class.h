@@ -4,6 +4,7 @@
 #pragma once
 
 #include <macro/base.h>
+#include <list.h>
 
 #ifdef __cplusplus
 #error Not support C++
@@ -13,11 +14,13 @@ typedef unsigned int type_index;
 
 struct class_table_info
 {
-	char *name;
+	struct list_head list;
+	struct list_head child;
 	unsigned int type;
 	unsigned int size;
 	unsigned int full_size;
 	unsigned int parent_type;
+	char *name;
 	void *init_obj;
 	unsigned int *pointer_type;
 	unsigned int *pointer_parent_type;
@@ -25,6 +28,7 @@ struct class_table_info
 	void (*pointer_destructor)(void *);
 };
 
+struct list_head *get_class_child(type_index type);
 char *get_class_name(void *obj);
 type_index get_class_type(void *obj);
 char *__class_name(type_index type);

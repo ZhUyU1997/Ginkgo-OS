@@ -2,32 +2,68 @@
 #include <vm.h>
 #include <log.h>
 #include <kalloc.h>
+#include <list.h>
+#include <spinlock.h>
+
+LIST_HEAD(ready);
+
+spinlock_t *sche_lock;
+;
+
+task_t *idle = &(task_t){0};
+task_t *current = NULL;
 
 int nextpid = 1;
 
-task_t *idle = &(task_t){0};
-static struct list_head *ready = &(struct list_head){0};
 extern pagetable_t kernel_pagetable;
-task_t *current = NULL;
+
+static inline struct task_t *scheduler_next_ready_task()
+{
+    if (list_empty(&ready))
+    {
+        PANIC("empty task list");
+    }
+
+    struct list_head *list = ready.next;
+    task_t *task = container_of(list, task_t, list);
+
+    return list;
+}
+
+static inline void scheduler_enqueue_task(task_t *task)
+{
+    list_add_tail(task, &ready);
+}
+
+static inline void scheduler_dequeue_task(task_t *task)
+{
+    list_del_init(task);
+}
 
 void schedule()
 {
-    if (!list_empty(ready))
-    {
-        struct list_head *list = ready->next;
-        list_del(list);
-        list_add_tail(&current->list, ready);
+    irq_flags_t flags;
+    spin_lock_irqsave(&sche_lock, flags);
 
-        task_t *task = container_of(list, task_t, list);
-        task_t *old = current;
-        current = task;
-        // LOGI("swtch:"$(old->name)"-->"$(current->name));
-        swtch(&old->context, &current->context);
+    if (current->status == TASK_STATUS_SUSPEND)
+    {
+        init_list_head(&current->list);
     }
     else
     {
-        LOGE("empty task list");
+        scheduler_enqueue_task(current);
     }
+
+    task_t *task = scheduler_next_ready_task();
+    scheduler_dequeue_task(task);
+
+    task_t *old = current;
+    current = task;
+
+    current->status = TASK_STATUS_RUNNING;
+    switch_context(&old->context, &current->context);
+
+    spin_unlock_irqrestore(&sche_lock, flags);
 }
 
 void task_mapstacks(task_t *task)
@@ -37,16 +73,23 @@ void task_mapstacks(task_t *task)
 
 void task_init()
 {
-    init_list_head(ready);
+    spin_lock_init(&sche_lock);
+    init_list_head(&idle->list);
+    init_list_head(&idle->mlist);
+
     idle->pagetable = kernel_pagetable;
     idle->name = "idle";
+    idle->status = TASK_STATUS_RUNNING;
     current = idle;
 }
 
-void task_create(const char *name, task_func_t func)
+task_t *task_create(const char *name, task_func_t func)
 {
+    LOGD("Create task: " $(name));
     task_t *task = (task_t *)alloc_page(1);
     init_list_head(&task->list);
+    init_list_head(&task->mlist);
+
     task->kstack = (virtual_addr_t)task;
     task->context.ra = (register_t)func;
     task->context.sp = task->kstack + PGSIZE;
@@ -54,5 +97,35 @@ void task_create(const char *name, task_func_t func)
     task->name = name;
 
     task_mapstacks(task);
-    list_add_tail(&task->list, ready);
+    task->status = TASK_STATUS_SUSPEND;
+    return task;
+}
+
+void task_resume(task_t *task)
+{
+    if (task && (task->status == TASK_STATUS_SUSPEND))
+    {
+        task->status = TASK_STATUS_READY;
+        scheduler_enqueue_task(task);
+    }
+}
+
+void task_suspend(task_t *task)
+{
+    task_t *next;
+
+    if (task)
+    {
+        if (task->status == TASK_STATUS_READY)
+        {
+            task->status = TASK_STATUS_SUSPEND;
+            scheduler_dequeue_task(task);
+        }
+        else if (task->status == TASK_STATUS_RUNNING)
+        {
+            task->status = TASK_STATUS_SUSPEND;
+            LOGI();
+            schedule();
+        }
+    }
 }

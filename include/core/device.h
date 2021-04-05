@@ -24,9 +24,7 @@ class(device_t)
     void (*resume)(device_t * this);
 };
 
-#define register_driver(type_name)            \
-    extern type_index type_name##_class_type; \
-    static type_index *__driver_type_index    \
-        __attribute__((__used__, __section__(".driver.type.index"))) = &type_name##_class_type
-
 void do_init_device();
+
+device_t *search_device(const char *name);
+#define search_device_with_class(type, name) ((type *) class_cast(type##_class_type, (char *)(search_device(name))))

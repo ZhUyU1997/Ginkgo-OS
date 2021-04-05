@@ -2,6 +2,7 @@
 
 #include <types.h>
 #include <typecheck.h>
+#include <barrier.h>
 #include <compiler.h>
 #include <preempt.h>
 #include <irqflags.h>

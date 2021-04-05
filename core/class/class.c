@@ -27,6 +27,11 @@ extern struct class_table_info __class_table_end[];
 
 class_impl(object_t){};
 
+struct list_head *get_class_child(type_index type)
+{
+	return &__class_table_start[type].child;
+}
+
 char *get_class_name(void *obj)
 {
 	if (obj)
@@ -140,6 +145,10 @@ void delete_class_object(void *obj)
 void *class_cast(type_index type, void *obj)
 {
 	//printf("type = %d\n",type);
+
+	if (!obj)
+		return NULL;
+
 	for (;;)
 	{
 		struct class_head_info *info = get_head_info_from_obj(obj);
@@ -186,31 +195,26 @@ static unsigned int set_class_table_info(struct class_table_info *info)
 
 void do_init_class()
 {
-	struct class_table_info *info;
-	type_index type;
-
-	info = &(*__class_table_start);
-	type = 0;
-	while (info < &(*__class_table_end))
+	type_index type = 0;
+	for (struct class_table_info *info = __class_table_start; info < __class_table_end; info++)
 	{
 		info->type = type;
 		info->pointer_type[0] = type;
+		init_list_head(&info->list);
+		init_list_head(&info->child);
 		type++;
-		info++;
 	}
 
-	info = &(*__class_table_start);
-	while (info < &(*__class_table_end))
+	for (struct class_table_info *info = __class_table_start; info < __class_table_end; info++)
 	{
 		info->parent_type = info->pointer_parent_type[0];
-		info++;
+		list_add_tail(&info->list, &__class_table_start[info->parent_type].child);
+		// LOGI("Insert "$(info->name)" to "$(__class_table_start[info->parent_type].name));
 	}
 
-	info = &(*__class_table_start);
-	while (info < &(*__class_table_end))
+	for (struct class_table_info *info = __class_table_start; info < __class_table_end; info++)
 	{
 		set_class_table_info(info);
 		//LOG("class: %s type: %d parent_type: %d size: %d full_size: %d", info->name, info->type, info->parent_type, info->size, info->full_size);
-		info++;
 	}
 }

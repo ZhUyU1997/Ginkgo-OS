@@ -187,7 +187,7 @@ void virtio_device_interrupt_ack(struct virtio_device_data *data)
     write32(addr + VIRTIO_MMIO_INTERRUPT_ACK, read32(addr + VIRTIO_MMIO_INTERRUPT_STATUS) & 0x3);
 }
 
-void* virtio_device_get_configuration_layout(struct virtio_device_data *data)
+void *virtio_device_get_configuration_layout(struct virtio_device_data *data)
 {
     addr_t addr = data->addr;
     return addr + VIRTIO_MMIO_CONFIG;
@@ -222,7 +222,7 @@ struct virtio_device_data *virtio_mmio_search_device(uint32 _device_id, int virt
     return NULL;
 }
 
-void virtio_device_irq_handler(struct virtio_device_data *data, void (*free_desc)(struct vring_desc *desc))
+void virtio_device_irq_handler(struct virtio_device_data *data, void (*free_desc)(struct vring_desc *desc, void *data), void *priv)
 {
     assert(data && free_desc);
     virtio_device_interrupt_ack(data);
@@ -238,7 +238,7 @@ void virtio_device_irq_handler(struct virtio_device_data *data, void (*free_desc
         {
             uint16_t flags = desc[idx].flags;
             uint16_t next = desc[idx].next;
-            free_desc(desc + idx);
+            free_desc(desc + idx, priv);
 
             if (!(flags & VRING_DESC_F_NEXT))
                 break;

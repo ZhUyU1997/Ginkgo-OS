@@ -1,6 +1,6 @@
 ifeq ($(strip $(filter-out clean,$(MAKECMDGOALS))),)
 sinclude scripts/env.mk
-endif
+
 
 CROSS_COMPILE	:= riscv64-linux-gnu-
 export CROSS_COMPILE
@@ -18,9 +18,11 @@ X_LDFLAGS	+= -z max-page-size=4096 -T kernel.ld -no-pie -nostdlib
 
 X_CLEAN		+= kernel.asm kernel.sym
 NAME		:= kernel
-SRC			+= arch/head.S arch/entry.S arch/context_switch.S \
-				arch/start.c arch/vm.c arch/exception.c arch/device.c arch/dtree.S \
-				init/*.c core/*.c core/class/*.c mm/*.c driver/*.c driver/virtio/*.c \
+SRC			+= arch/ arch/head.S arch/entry.S arch/context_switch.S \
+				arch/start.c arch/vm.c arch/exception.c arch/device.c \
+				init/*.c core/*.c core/class/*.c mm/*.c \
+				fs/cpio/*.c fs/*.c \
+				driver/*.c driver/virtio/*.c \
 				lib/*.c lib/libc/*.c \
 				lib/xjil/*.c
 
@@ -30,6 +32,8 @@ $(LD) $(X_LDFLAGS) -o $@ $(X_OBJS); \
 $(OD) -S kernel > kernel.asm; \
 $(OD) -t kernel | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > kernel.sym
 endef
+
+else
 
 QEMU		= qemu-system-riscv64
 QEMUOPTS	= -machine virt -bios none -kernel kernel -m 128M -smp 1 -serial stdio
@@ -51,8 +55,22 @@ QEMUOPTS	+= -device virtio-mouse-device,bus=virtio-mmio-bus.5
 # C-a c    switch between console and monitor
 # C-a C-a  sends C-a
 
-qemu: 
-	$(QEMU) $(QEMUOPTS)
+qemu: fs.img
+	@echo [RUN] $@;
+	@$(QEMU) $(QEMUOPTS)
 
-qemu-gdb:
-	$(QEMU) $(QEMUOPTS) -S -gdb tcp::10001,ipv4
+qemu-gdb: fs.img
+	@echo [RUN] $@;
+	@$(QEMU) $(QEMUOPTS) -S -gdb tcp::10001,ipv4
+
+FIND		:=	find
+CPIO		:=	cpio -o -H newc --quiet
+
+fs.img: FORCE
+	@echo [CPIO] $@;
+	@cd rootfs && $(FIND) . -not -name . | $(CPIO) > ../fs.img
+
+FORCE: ;
+
+.PHONY : FORCE
+endif

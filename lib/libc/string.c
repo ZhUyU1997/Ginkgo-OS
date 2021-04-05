@@ -133,3 +133,58 @@ char *strdup(const char *s)
 
     return NULL;
 }
+
+char *strstr(const char *s1, const char *s2)
+{
+    size_t l1, l2;
+
+    l2 = strlen(s2);
+    if (!l2)
+        return (char *)s1;
+
+    l1 = strlen(s1);
+    while (l1 >= l2)
+    {
+        l1--;
+        if (!memcmp(s1, s2, l2))
+            return (char *)s1;
+        s1++;
+    }
+
+    return NULL;
+}
+
+size_t strlcpy(char *dest, const char *src, size_t n)
+{
+    size_t len;
+    size_t ret = strlen(src);
+
+    if (n)
+    {
+        len = (ret >= n) ? n - 1 : ret;
+        memcpy(dest, src, len);
+        dest[len] = '\0';
+    }
+    return ret;
+}
+
+char *strchr(const char *s, int c)
+{
+    for (; *s != (char)c; ++s)
+        if (*s == '\0')
+            return NULL;
+    return (char *)s;
+}
+
+char *strrchr(const char *s, int c)
+{
+    const char *p = s + strlen(s);
+
+    do
+    {
+        if (*p == (char)c)
+            return (char *)p;
+    } while (--p >= s);
+
+    return NULL;
+}

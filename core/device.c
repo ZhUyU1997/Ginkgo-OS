@@ -3,26 +3,39 @@
 #include <log.h>
 #include <hmap.h>
 #include <xjil.h>
+#include <string.h>
 
 class_impl(device_t){};
 
-extern type_index *__driver_type_index_table_start[];
-extern type_index *__driver_type_index_table_end[];
 extern unsigned char __dtree_start;
 extern unsigned char __dtree_end;
 
 static struct hmap_t *map = NULL;
+static struct hmap_t *device_map = NULL;
+
+static void register_device(type_index index)
+{
+    struct list_head *child = get_class_child(index);
+    struct class_table_info *info;
+
+    list_for_each_entry(info, child, list)
+    {
+        LOGI("Register ["$(__class_name(info->type))"]");
+        hmap_add(map, __class_name(info->type), info->type);
+    }
+
+    list_for_each_entry(info, child, list)
+    {
+        register_device(info->type);
+    }
+}
 
 void do_init_device()
 {
-    // device_t *dev = dynamic_cast(device_t)(new (plic_irqchip_t));
-    // dev->probe(dev, NULL);
     map = hmap_alloc(0);
-    for (type_index **i = __driver_type_index_table_start; i < __driver_type_index_table_end; i++)
-    {
-        type_index index = **i;
-        hmap_add(map, __class_name(index), index);
-    }
+    device_map = hmap_alloc(0);
+
+    register_device(class_type(device_t));
 
     xjil_value_t *v = xjil_new();
     xjil_parse(v, &__dtree_start, &__dtree_end - &__dtree_start);
@@ -36,15 +49,28 @@ void do_init_device()
             const char *tag = xjil_value_get_tag(value);
             if (tag)
             {
-                LOGI("Init ["$(tag)"]");
+                LOGI("Init [" $(tag) "]");
                 type_index index = hmap_search(map, tag);
                 device_t *dev = dynamic_cast(device_t)(new_class_object(index));
                 int ret = dev->probe(dev, value);
-                
-                if(ret != 0)
-                    delete(dev);
+
+                if (ret != 0)
+                    delete_class_object(dev);
+
+                const char *name = xjil_read_string(value, "name", NULL);
+
+                if (name)
+                {
+                    hmap_add(device_map, strdup(name), dev);
+                }
             }
         }
     }
     xjil_del(v);
+}
+
+device_t *search_device(const char *name)
+{
+    device_t *dev = hmap_search(device_map, name);
+    return dev;
 }

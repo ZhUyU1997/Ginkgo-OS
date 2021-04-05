@@ -12,10 +12,13 @@
 #include <malloc.h>
 #include <core/device.h>
 #include <hmap.h>
+#include <vfs/vfs.h>
+#include <ctype.h>
 
 void hello()
 {
     LOGI("hello");
+
     while (1)
         ;
 }
@@ -29,10 +32,12 @@ void main()
 
     kvminit();
     kvminithart();
+    task_init();
 
     do_init_device();
-    task_init();
-    task_create("test0", hello);
+    do_init_vfs();
+
+    task_resume(task_create("test0", hello));
 
     while (1)
         schedule();

@@ -5,8 +5,8 @@
 # Save current registers in old. Load from new.	
 
 
-.globl swtch
-swtch:
+.globl switch_context
+switch_context:
         sd ra, 0(a0)
         sd sp, 8(a0)
         sd s0, 16(a0)
