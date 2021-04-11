@@ -118,6 +118,7 @@ int mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm)
     {
         if ((pte = walk(pagetable, a, 1)) == 0)
         {
+            LOGE("walk(pagetable, a, 1)) == 0");
             return -1;
         }
 

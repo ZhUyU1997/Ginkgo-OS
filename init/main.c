@@ -14,13 +14,51 @@
 #include <hmap.h>
 #include <vfs/vfs.h>
 #include <ctype.h>
+#include <csr.h>
 
 void hello()
 {
     LOGI("hello");
 
     while (1)
-        ;
+        schedule();
+}
+
+static void map_exec_file(const char *file, virtual_addr_t addr)
+{
+    vfs_mount("virtio-block", "/", "cpio", MOUNT_RO);
+    int fd = vfs_open(file, O_RDONLY, 0);
+    struct vfs_stat_t st;
+    vfs_fstat(fd, &st);
+
+    void *buf = alloc_page(1);
+    LOGI("size:" $((int)st.st_size));
+    LOGI("buf:" $(buf));
+
+    vfs_read(fd, buf, st.st_size);
+    kvmmap(current->pagetable, addr, buf, PAGE_SIZE, PTE_R | PTE_W | PTE_X | PTE_U);
+
+    local_flush_tlb_all();
+    LOGI();
+}
+
+
+static void do_init()
+{
+    map_exec_file("/test", 0x10000);
+
+    struct pt_regs *regs = current->thread_info.kernel_sp - sizeof(struct pt_regs);
+    regs->sepc = 0x10000;
+    regs->sstatus = csr_read(sstatus);
+    regs->sstatus &= ~(SSTATUS_SPP);
+    regs->sstatus |= SSTATUS_SPIE;
+
+    asm volatile("mv tp, %0\n\t"
+                 "mv sp, %1\n\t"
+                 "la ra, user_ret\n\t"
+                 "ret\n\t"
+                 :
+                 : "r"(current), "r"(regs));
 }
 
 void main()
@@ -38,7 +76,9 @@ void main()
     do_init_vfs();
 
     task_resume(task_create("test0", hello));
+    task_resume(task_create("init", do_init));
 
+    local_irq_enable();
     while (1)
         schedule();
 }

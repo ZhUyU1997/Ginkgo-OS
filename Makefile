@@ -13,7 +13,7 @@ X_CFLAGS	+= -std=gnu11 -O3 -g -ggdb \
 				-fno-omit-frame-pointer -fno-common -nostdlib -mno-relax \
 				-fno-pie
 				
-X_INCDIRS	+= include
+X_INCDIRS	+= include arch/include
 X_LDFLAGS	+= -z max-page-size=4096 -T kernel.ld -no-pie -nostdlib
 
 X_CLEAN		+= kernel.asm kernel.sym
@@ -25,6 +25,15 @@ SRC			+= arch/ arch/head.S arch/entry.S arch/context_switch.S \
 				driver/*.c driver/virtio/*.c \
 				lib/*.c lib/libc/*.c \
 				lib/xjil/*.c
+
+X_PREPARE	:= arch/include/asm-offsets.h
+
+arch/include/asm-offsets.h: arch/asm-offsets.c
+	@echo Gen asm-offsets.h
+	@$(CC) $(X_CFLAGS) $(X_CPPFLAGS) -S -o arch/asm-offsets.s arch/asm-offsets.c
+	@echo "#pragma once" > arch/include/asm-offsets.h
+	@cat arch/asm-offsets.s | sed -n '/define/s/\.ascii\ \"\([^"]*\)\"/\1/p' >> arch/include/asm-offsets.h
+	@rm arch/asm-offsets.s
 
 define CUSTOM_TARGET_CMD
 echo [KERNEL] $@; \
@@ -69,6 +78,9 @@ CPIO		:=	cpio -o -H newc --quiet
 fs.img: FORCE
 	@echo [CPIO] $@;
 	@cd rootfs && $(FIND) . -not -name . | $(CPIO) > ../fs.img
+
+cloc:
+	cloc . --include-ext=c,h,S --exclude-dir=scripts,rootfs
 
 FORCE: ;
 
