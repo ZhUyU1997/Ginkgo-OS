@@ -1,6 +1,7 @@
 #include <asm.h>
 #include <asm-offsets.h>
 #include <csr.h>
+#include <syscall.h>
 
 .align 4
 .globl handle_exception
@@ -64,11 +65,50 @@ _save_context:
 	REG_S s4, PT_SCAUSE(sp)
 	REG_S s5, PT_TP(sp)
 
-	move a0, sp /* pt_regs */
-        call riscv64_handle_exception
+	/*
+	 * Set sscratch register to 0, so that if a recursive exception
+	 * occurs, the exception vector knows it came from the kernel
+	 */
+	csrw CSR_SSCRATCH, x0
 
-.globl user_ret
-user_ret:
+	la ra, ret_from_exception
+
+	/* Handle syscalls */
+	li t0, 8
+	beq s4, t0, handle_syscall
+
+	/* Handle interrupts */
+	move a0, sp /* pt_regs */
+	tail do_IRQ
+
+handle_syscall:
+	/* save the initial A0 value (needed in signal handlers) */
+	REG_S a0, PT_ORIG_A0(sp)
+	/*
+	 * Advance SEPC to avoid executing the original
+	 * scall instruction on sret
+	 */
+	addi s2, s2, 0x4
+	REG_S s2, PT_SEPC(sp)
+check_syscall_nr:
+	/* Check to make sure we don't jump to a bogus syscall number. */
+	li t0, __NR_syscalls
+	la s0, sys_ni_syscall
+	/* Syscall number held in a7 */
+	bgeu a7, t0, 1f
+	la s0, sys_call_table
+	slli t0, a7, 3
+	add s0, s0, t0
+	REG_L s0, 0(s0)
+1:
+	jalr s0
+
+ret_from_syscall:
+	/* Set user a0 to kernel a0 */
+	REG_S a0, PT_A0(sp)
+
+.globl ret_from_exception
+ret_from_exception:
 	/* Save unwound kernel stack pointer in thread_info */
 	addi s0, sp, PT_SIZE_ON_STACK
 	REG_S s0, TASK_TI_KERNEL_SP(tp)
@@ -86,7 +126,7 @@ user_ret:
 	csrw CSR_SSTATUS, a0
 	csrw CSR_SEPC, a2
 
-        REG_L x1,  PT_RA(sp)
+    REG_L x1,  PT_RA(sp)
 	REG_L x3,  PT_GP(sp)
 	REG_L x4,  PT_TP(sp)
 	REG_L x5,  PT_T0(sp)
@@ -118,36 +158,36 @@ user_ret:
 	REG_L x31, PT_T6(sp)
 
 	REG_L x2,  PT_SP(sp)
-        sret
+    sret
 
 .globl timer_vector
 .align 4
 timer_vector:
-        # start.c has set up the memory that mscratch points to:
-        # scratch[0,8,16] : register save area.
-        # scratch[24] : address of CLINT's MTIMECMP register.
-        # scratch[32] : desired interval between interrupts.
-        
-        csrrw a0, mscratch, a0
-        sd a1, 0(a0)
-        sd a2, 8(a0)
-        sd a3, 16(a0)
+	# start.c has set up the memory that mscratch points to:
+	# scratch[0,8,16] : register save area.
+	# scratch[24] : address of CLINT's MTIMECMP register.
+	# scratch[32] : desired interval between interrupts.
 
-        # schedule the next timer interrupt
-        # by adding interval to mtimecmp.
-        ld a1, 24(a0) # CLINT_MTIMECMP(hart)
-        ld a2, 32(a0) # interval
-        ld a3, 0(a1)
-        add a3, a3, a2
-        sd a3, 0(a1)
+	csrrw a0, mscratch, a0
+	sd a1, 0(a0)
+	sd a2, 8(a0)
+	sd a3, 16(a0)
 
-        # raise a supervisor software interrupt.
+	# schedule the next timer interrupt
+	# by adding interval to mtimecmp.
+	ld a1, 24(a0) # CLINT_MTIMECMP(hart)
+	ld a2, 32(a0) # interval
+	ld a3, 0(a1)
+	add a3, a3, a2
+	sd a3, 0(a1)
+
+	# raise a supervisor software interrupt.
 	li a1, 2
-        csrw sip, a1
+	csrw sip, a1
 
-        ld a3, 16(a0)
-        ld a2, 8(a0)
-        ld a1, 0(a0)
-        csrrw a0, mscratch, a0
+	ld a3, 16(a0)
+	ld a2, 8(a0)
+	ld a1, 0(a0)
+	csrrw a0, mscratch, a0
 
-        mret
+	mret

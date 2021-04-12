@@ -19,7 +19,7 @@ X_LDFLAGS	+= -z max-page-size=4096 -T kernel.ld -no-pie -nostdlib
 X_CLEAN		+= kernel.asm kernel.sym
 NAME		:= kernel
 SRC			+= arch/ arch/head.S arch/entry.S arch/context_switch.S \
-				arch/start.c arch/vm.c arch/exception.c arch/device.c \
+				arch/start.c arch/vm.c arch/exception.c arch/device.c arch/syscall_table.c \
 				init/*.c core/*.c core/class/*.c mm/*.c \
 				fs/cpio/*.c fs/*.c \
 				driver/*.c driver/virtio/*.c \

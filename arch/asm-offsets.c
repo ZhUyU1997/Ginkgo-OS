@@ -4,7 +4,7 @@
 void asm_offsets(void)
 {
     OFFSET(TASK_TI_KERNEL_SP, task_t, thread_info.kernel_sp);
-	OFFSET(TASK_TI_USER_SP, task_t, thread_info.user_sp);
+    OFFSET(TASK_TI_USER_SP, task_t, thread_info.user_sp);
     DEFINE(PT_SIZE, sizeof(struct pt_regs));
     OFFSET(PT_SEPC, pt_regs, sepc);
     OFFSET(PT_RA, pt_regs, ra);
@@ -43,5 +43,5 @@ void asm_offsets(void)
     OFFSET(PT_SSTATUS, pt_regs, sstatus);
     OFFSET(PT_SBADADDR, pt_regs, sbadaddr);
     OFFSET(PT_SCAUSE, pt_regs, scause);
-	DEFINE(PT_SIZE_ON_STACK, ALIGN(sizeof(struct pt_regs), STACK_ALIGN));
+    DEFINE(PT_SIZE_ON_STACK, ALIGN(sizeof(struct pt_regs), STACK_ALIGN));
 }

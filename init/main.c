@@ -55,7 +55,7 @@ static void do_init()
 
     asm volatile("mv tp, %0\n\t"
                  "mv sp, %1\n\t"
-                 "la ra, user_ret\n\t"
+                 "la ra, ret_from_exception\n\t"
                  "ret\n\t"
                  :
                  : "r"(current), "r"(regs));

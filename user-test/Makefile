@@ -15,7 +15,7 @@ X_INCDIRS	+= include
 X_LDFLAGS	+= -z max-page-size=4096  -N -e main -Ttext 0x10000 -no-pie -nostdlib
 
 NAME		:= test
-SRC			+= test.c
+SRC			+= test.c usys.c
 
 define CUSTOM_TARGET_CMD
 echo [OUTPUT] $@; \

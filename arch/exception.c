@@ -51,7 +51,7 @@ void do_timer_init()
     csr_set(mie, MIE_MTIE);
 }
 
-void riscv64_handle_exception(struct pt_regs *regs)
+void do_IRQ(struct pt_regs *regs)
 {
     uint64 sepc = regs->sepc;
     uint64 sstatus = regs->sstatus;
@@ -102,10 +102,6 @@ void riscv64_handle_exception(struct pt_regs *regs)
     {
         switch (cause)
         {
-        case 8:
-            regs->sepc += 4;
-            LOGI("syscall");
-            break;
 
         default:
         {
