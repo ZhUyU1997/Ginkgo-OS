@@ -14,3 +14,5 @@
 	    ".size " #name", .-"#name "\n\t")
 
 SYSFUNC_DEF(putstring);
+SYSFUNC_DEF(create);
+SYSFUNC_DEF(present);

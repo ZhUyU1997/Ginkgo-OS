@@ -2,10 +2,23 @@
 
 int main()
 {
-    while (1)
+
+    putstring("create");
+    unsigned int *addr = create();
+
+    for (int i = 2; i < 640 * 480; i++)
     {
-        for (volatile int i = 0; i < 10000000; i++);
-            putstring("2342");
+        addr[i] = i;
     }
+
+    for (int i = 2; i < 640 * 480; i++)
+    {
+        addr[i] = 0xff000000 | (addr[i] + addr[i - 1]);
+    }
+
+    present();
+    putstring("present");
+    while (1)
+        ;
     return 0;
 }

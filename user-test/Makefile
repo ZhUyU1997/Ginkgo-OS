@@ -12,7 +12,7 @@ X_CFLAGS	+= -std=gnu11 -O3 -g -ggdb \
 				-fno-pie
 				
 X_INCDIRS	+= include
-X_LDFLAGS	+= -z max-page-size=4096  -N -e main -Ttext 0x10000 -no-pie -nostdlib
+X_LDFLAGS	+= -z max-page-size=4096  -N -e main -Ttext 0x20000000 -no-pie -nostdlib
 
 NAME		:= test
 SRC			+= test.c usys.c

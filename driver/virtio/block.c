@@ -1,3 +1,5 @@
+#include "virtio-internal.h"
+
 #include <virtio/virtio.h>
 
 #include <types.h>
@@ -15,7 +17,8 @@
 
 class(virtio_block_t, block_t)
 {
-    struct virtio_device_data *data;
+    struct virtio_mmio_desc_t *desc;
+    struct virtio_queue_t requestq;
     struct wait_queue_head wq_head;
 };
 
@@ -24,15 +27,14 @@ class_impl(virtio_block_t, block_t){};
 u64_t virtio_block_read(block_t *blk, u8_t *buf, u64_t blkno, u64_t blkcnt)
 {
     virtio_block_t *vblk = dynamic_cast(virtio_block_t)(blk);
-    struct virtio_device_data *data = vblk->data;
     struct virtio_blk_outhdr *buf0 = calloc(1, sizeof(struct virtio_blk_outhdr));
     buf0->type = VIRTIO_BLK_T_IN;
     buf0->ioprio = 0;
     buf0->sector = blkno;
 
     uint8 status = 1;
-    virtio_send_command_3(data, VRING_DESC(buf0), VRING_DESC_LEN_FLAG(buf, blkcnt * block_size(blk), VRING_DESC_F_WRITE), VRING_DESC(&status));
-    virtio_mmio_notify(data);
+    virtio_send_command_3(&vblk->requestq, VRING_DESC(buf0), VRING_DESC_LEN_FLAG(buf, blkcnt * block_size(blk), VRING_DESC_F_WRITE), VRING_DESC(&status));
+    virtio_mmio_notify(vblk->desc);
     wait_event(&vblk->wq_head, (!status));
     return blkcnt;
 }
@@ -40,7 +42,6 @@ u64_t virtio_block_read(block_t *blk, u8_t *buf, u64_t blkno, u64_t blkcnt)
 u64_t virtio_block_write(block_t *blk, u8_t *buf, u64_t blkno, u64_t blkcnt)
 {
     virtio_block_t *vblk = dynamic_cast(virtio_block_t)(blk);
-    struct virtio_device_data *data = vblk->data;
     struct virtio_blk_outhdr *buf0 = calloc(1, sizeof(struct virtio_blk_outhdr));
 
     buf0->type = VIRTIO_BLK_T_OUT;
@@ -48,8 +49,8 @@ u64_t virtio_block_write(block_t *blk, u8_t *buf, u64_t blkno, u64_t blkcnt)
     buf0->sector = blkno;
 
     uint8 status = 1;
-    virtio_send_command_3(data, VRING_DESC(buf0), VRING_DESC_LEN(buf, blkcnt * block_size(blk)), VRING_DESC(&status));
-    virtio_mmio_notify(data);
+    virtio_send_command_3(&vblk->requestq, VRING_DESC(buf0), VRING_DESC_LEN(buf, blkcnt * block_size(blk)), VRING_DESC(&status));
+    virtio_mmio_notify(vblk->desc);
     wait_event(&vblk->wq_head, (!status));
     return blkcnt;
 }
@@ -70,11 +71,12 @@ static uint32 virtio_block_get_features(uint32 features)
     return features;
 }
 
-static void free_desc(struct vring_desc *desc, virtio_block_t *vblk)
+static void free_desc(struct vring_desc *desc, void *data)
 {
+    virtio_block_t *vblk = (virtio_block_t *)data;
     if (desc->flags == VRING_DESC_F_WRITE)
     {
-        u8_t *status = desc->addr;
+        u8_t *status = (u8_t *)desc->addr;
 
         if (*status == 0)
         {
@@ -85,16 +87,17 @@ static void free_desc(struct vring_desc *desc, virtio_block_t *vblk)
     {
         if (desc->len == sizeof(struct virtio_blk_outhdr))
         {
-            free(desc->addr);
+            free((void *)desc->addr);
         }
     }
 }
 
-static void irq_handler(virtio_block_t *vblk)
+static void irq_handler(void *data)
 {
-    struct virtio_device_data *data = vblk->data;
-    virtio_device_interrupt_ack(data);
-    virtio_device_irq_handler(data, free_desc, vblk);
+    virtio_block_t *vblk = (virtio_block_t *)data;
+    struct virtio_mmio_desc_t *desc = vblk->desc;
+    virtio_mmio_interrupt_ack(desc);
+    virtio_device_irq_handler(&vblk->requestq, free_desc, vblk);
 }
 
 int virtio_block_probe(device_t *this, xjil_value_t *value)
@@ -110,17 +113,18 @@ int virtio_block_probe(device_t *this, xjil_value_t *value)
         return -1;
     }
 
-    struct virtio_device_data *data = virtio_mmio_search_device(device_id, virtio_mmio_bus);
+    struct virtio_mmio_desc_t *desc = virtio_mmio_search_device(device_id, virtio_mmio_bus);
 
-    if (!data)
+    if (!desc)
     {
         return -1;
     }
 
-    vblk->data = data;
-    virtio_device_setup(vblk->data, virtio_block_get_features);
+    vblk->desc = desc;
+    virtio_mmio_setup(vblk->desc, virtio_block_get_features);
+    virtio_mmio_queue_set(vblk->desc, &vblk->requestq, 0);
 
-    struct virtio_blk_config *config = (struct virtio_blk_config *)virtio_device_get_configuration_layout(vblk->data);
+    struct virtio_blk_config *config = (struct virtio_blk_config *)virtio_mmio_get_config(vblk->desc);
     LOGD("capacity:" $(config->capacity));
     LOGD("blk_size:" $(config->blk_size));
 

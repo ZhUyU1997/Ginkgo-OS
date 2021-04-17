@@ -15,23 +15,30 @@
 //https://github.com/wblixin6017/zircon/tree/master/system/dev/bus/virtio
 //https://github.com/yiannigiannaris/xv6-riscv-window/tree/master/kernel
 
-struct virtio_device_data mmio_device_data[MMIO_VIRTIO_NUM] = {0};
+struct virtio_mmio_desc_t mmio_device_data[MMIO_VIRTIO_NUM] = {0};
 
-void virtio_desc_new(struct virtio_device_data *data, struct vring_desc *desc, __virtio16 flags)
+bool_t virtio_desc_new(struct virtio_queue_t *queue, struct vring_desc *desc, __virtio16 flags)
 {
     if (flags & VRING_DESC_F_NEXT)
-        desc->next = (data->idx + 1) % VIRTIO_RING_SIZE;
+        desc->next = (queue->idx + 1) % VIRTIO_RING_SIZE;
     else
         desc->next = 0;
 
     desc->flags |= flags;
-    data->queue.desc[data->idx] = *desc;
-    data->idx = (data->idx + 1) % VIRTIO_RING_SIZE;
+
+    if (queue->queue.desc[queue->idx].flags != 0)
+    {
+        return FALSE;
+    }
+
+    queue->queue.desc[queue->idx] = *desc;
+    queue->idx = (queue->idx + 1) % VIRTIO_RING_SIZE;
+    return TRUE;
 }
 
-void virtio_desc_del(struct virtio_device_data *data, int idx)
+void virtio_desc_del(struct virtio_queue_t *queue, int idx)
 {
-    struct vring_desc *desc = data->queue.desc;
+    struct vring_desc *desc = queue->queue.desc;
 
     while (1)
     {
@@ -46,28 +53,45 @@ void virtio_desc_del(struct virtio_device_data *data, int idx)
     }
 }
 
-void virtio_send_command_2(struct virtio_device_data *data, struct vring_desc *request, struct vring_desc *response)
+bool_t virtio_send_command_1(struct virtio_queue_t *queue, struct vring_desc *response)
 {
-    uint32 head = virtio_desc_get_index(data);
+    uint32 head = virtio_desc_get_index(queue);
+    if (!virtio_desc_new(queue, response, VRING_DESC_F_WRITE))
+        return FALSE;
 
-    virtio_desc_new(data, request, VRING_DESC_F_NEXT);
-    virtio_desc_new(data, response, VRING_DESC_F_WRITE);
-    virtio_avail_new(data, head);
+    virtio_avail_new(queue, head);
+    return TRUE;
 }
 
-void virtio_send_command_3(struct virtio_device_data *data, struct vring_desc *request1, struct vring_desc *request2, struct vring_desc *response)
+bool_t virtio_send_command_2(struct virtio_queue_t *queue, struct vring_desc *request, struct vring_desc *response)
 {
-    uint32 head = virtio_desc_get_index(data);
+    uint32 head = virtio_desc_get_index(queue);
 
-    virtio_desc_new(data, request1, VRING_DESC_F_NEXT);
-    virtio_desc_new(data, request2, VRING_DESC_F_NEXT);
-    virtio_desc_new(data, response, VRING_DESC_F_WRITE);
-    virtio_avail_new(data, head);
+    if (!virtio_desc_new(queue, request, VRING_DESC_F_NEXT))
+        return FALSE;
+    if (!virtio_desc_new(queue, response, VRING_DESC_F_WRITE))
+        return FALSE;
+    virtio_avail_new(queue, head);
+    return TRUE;
 }
 
-void virtio_avail_new(struct virtio_device_data *data, int idx)
+bool_t virtio_send_command_3(struct virtio_queue_t *queue, struct vring_desc *request1, struct vring_desc *request2, struct vring_desc *response)
 {
-    vring_avail_t *avail = data->queue.avail;
+    uint32 head = virtio_desc_get_index(queue);
+
+    if (!virtio_desc_new(queue, request1, VRING_DESC_F_NEXT))
+        return FALSE;
+    if (!virtio_desc_new(queue, request2, VRING_DESC_F_NEXT))
+        return FALSE;
+    if (!virtio_desc_new(queue, response, VRING_DESC_F_WRITE))
+        return FALSE;
+    virtio_avail_new(queue, head);
+    return TRUE;
+}
+
+void virtio_avail_new(struct virtio_queue_t *queue, int idx)
+{
+    vring_avail_t *avail = queue->queue.avail;
 
     avail->ring[avail->idx % VIRTIO_RING_SIZE] = idx;
     __sync_synchronize();
@@ -75,19 +99,19 @@ void virtio_avail_new(struct virtio_device_data *data, int idx)
     __sync_synchronize();
 }
 
-int virtio_desc_get_index(struct virtio_device_data *data)
+int virtio_desc_get_index(struct virtio_queue_t *queue)
 {
-    return data->idx;
+    return queue->idx;
 }
 
-void virtio_mmio_notify(struct virtio_device_data *data)
+void virtio_mmio_notify(struct virtio_mmio_desc_t *desc)
 {
-    write32(data->addr + VIRTIO_MMIO_QUEUE_NOTIFY, 0);
+    write32(desc->addr + VIRTIO_MMIO_QUEUE_NOTIFY, 0);
 }
 
-int virtio_device_setup(struct virtio_device_data *data, uint32 (*get_features)(uint32 features))
+int virtio_mmio_setup(struct virtio_mmio_desc_t *desc, uint32 (*get_features)(uint32 features))
 {
-    addr_t addr = data->addr;
+    addr_t addr = desc->addr;
 
     uint32 status = 0;
 
@@ -122,46 +146,40 @@ int virtio_device_setup(struct virtio_device_data *data, uint32 (*get_features)(
         return 0;
     }
 
+    // 8. Set the DRIVER_OK status bit. Device is now "live"
+    status |= VIRTIO_CONFIG_S_DRIVER_OK;
+    write32(addr + VIRTIO_MMIO_STATUS, status);
+
+    write32(addr + VIRTIO_MMIO_GUEST_PAGE_SIZE, PAGE_SIZE);
+
+    return 1;
+}
+
+int virtio_mmio_queue_set(struct virtio_mmio_desc_t *desc, struct virtio_queue_t *queue, int sel)
+{
+    addr_t addr = desc->addr;
+
     // 7. Perform device-specific setup.
     // Set the queue num. We have to make sure that the
     // queue size is valid because the device can only take
     // a certain size.
-    uint32 queue_num_max = read32(addr + VIRTIO_MMIO_QUEUE_NUM_MAX);
-    LOGI("QUEUE_NUM_MAX:" $(queue_num_max));
+    LOGI("SEL:" $(sel));
+
+    write32(addr + VIRTIO_MMIO_QUEUE_SEL, sel);
+
+    uint32 max = read32(addr + VIRTIO_MMIO_QUEUE_NUM_MAX);
+    LOGI("QUEUE_NUM_MAX:" $(max));
     write32(addr + VIRTIO_MMIO_QUEUE_NUM, VIRTIO_RING_SIZE);
 
-    if (VIRTIO_RING_SIZE > queue_num_max)
+    if (VIRTIO_RING_SIZE > max)
     {
         LOGI("queue size fail...");
         write32(addr + VIRTIO_MMIO_STATUS, VIRTIO_CONFIG_S_FAILED);
         return 0;
     }
-    // First, if the block device array is empty, create it!
-    // We add 4095 to round this up and then do an integer
-    // divide to truncate the decimal. We don't add 4096,
-    // because if it is exactly 4096 bytes, we would get two
-    // pages, not one.
 
     uint32 num_pages = (vring_size(VIRTIO_RING_SIZE, PAGE_SIZE) + PAGE_SIZE - 1) >> PAGE_SHIFT;
     LOGI("num_pages:" $(num_pages));
-    // We allocate a page for each device. This will the the
-    // descriptor where we can communicate with the block
-    // device. We will still use an MMIO register (in
-    // particular, QueueNotify) to actually tell the device
-    // we put something in memory. We also have to be
-    // careful with memory ordering. We don't want to
-    // issue a notify before all memory writes have
-    // finished. We will look at that later, but we need
-    // what is called a memory "fence" or barrier.
-    write32(addr + VIRTIO_MMIO_QUEUE_SEL, 0);
-    // TODO: Set up queue #1 (cursorq)
-
-    // Alignment is very important here. This is the memory address
-    // alignment between the available and used rings. If this is wrong,
-    // then we and the device will refer to different memory addresses
-    // and hence get the wrong data in the used ring.
-    // ptr.add(MmioOffsets::QueueAlign.scale32()).write_volatile(2);
-    write32(addr + VIRTIO_MMIO_GUEST_PAGE_SIZE, PAGE_SIZE);
 
     // QueuePFN is a physical page number, however it
     // appears for QEMU we have to write the entire memory
@@ -174,26 +192,23 @@ int virtio_device_setup(struct virtio_device_data *data, uint32 (*get_features)(
     uint32 queue_pfn = (addr_t)queue_ptr >> PAGE_SHIFT;
     write32(addr + VIRTIO_MMIO_QUEUE_PFN, queue_pfn);
 
-    // 8. Set the DRIVER_OK status bit. Device is now "live"
-    status |= VIRTIO_CONFIG_S_DRIVER_OK;
-    write32(addr + VIRTIO_MMIO_STATUS, status);
-    vring_init(&data->queue, VIRTIO_RING_SIZE, queue_ptr, PAGE_SIZE);
+    vring_init(&queue->queue, VIRTIO_RING_SIZE, queue_ptr, PAGE_SIZE);
+
     return 1;
 }
-
-void virtio_device_interrupt_ack(struct virtio_device_data *data)
+void virtio_mmio_interrupt_ack(struct virtio_mmio_desc_t *desc)
 {
-    addr_t addr = data->addr;
+    addr_t addr = desc->addr;
     write32(addr + VIRTIO_MMIO_INTERRUPT_ACK, read32(addr + VIRTIO_MMIO_INTERRUPT_STATUS) & 0x3);
 }
 
-void *virtio_device_get_configuration_layout(struct virtio_device_data *data)
+void *virtio_mmio_get_config(struct virtio_mmio_desc_t *desc)
 {
-    addr_t addr = data->addr;
+    addr_t addr = desc->addr;
     return addr + VIRTIO_MMIO_CONFIG;
 }
 
-struct virtio_device_data *virtio_mmio_search_device(uint32 _device_id, int virtio_mmio_bus)
+struct virtio_mmio_desc_t *virtio_mmio_search_device(uint32 _device_id, int virtio_mmio_bus)
 {
     addr_t addr = MMIO_VIRTIO_START + virtio_mmio_bus * MMIO_VIRTIO_STRIDE;
     uint32 magic_value = read32(addr + VIRTIO_MMIO_MAGIC_VALUE);
@@ -212,7 +227,7 @@ struct virtio_device_data *virtio_mmio_search_device(uint32 _device_id, int virt
     {
         if (virtio_mmio_bus < MMIO_VIRTIO_NUM)
         {
-            struct virtio_device_data *data = &mmio_device_data[virtio_mmio_bus];
+            struct virtio_mmio_desc_t *data = &mmio_device_data[virtio_mmio_bus];
             data->virtio_mmio_bus = virtio_mmio_bus;
             data->device_id = device_id;
             data->addr = addr;
@@ -222,12 +237,12 @@ struct virtio_device_data *virtio_mmio_search_device(uint32 _device_id, int virt
     return NULL;
 }
 
-void virtio_device_irq_handler(struct virtio_device_data *data, void (*free_desc)(struct vring_desc *desc, void *data), void *priv)
+void virtio_device_irq_handler(struct virtio_queue_t *data, void (*free_desc)(struct vring_desc *desc, void *data), void *priv)
 {
     assert(data && free_desc);
-    virtio_device_interrupt_ack(data);
 
-    vring_t *queue = &data->queue;
+    volatile vring_t *queue = &data->queue;
+
     while (data->ack_used_idx != queue->used->idx)
     {
         int idx = queue->used->ring[data->ack_used_idx % VIRTIO_RING_SIZE].id;
@@ -238,7 +253,12 @@ void virtio_device_irq_handler(struct virtio_device_data *data, void (*free_desc
         {
             uint16_t flags = desc[idx].flags;
             uint16_t next = desc[idx].next;
-            free_desc(desc + idx, priv);
+
+            // In case of sending command during callback
+            struct vring_desc temp = desc[idx];
+
+            desc[idx] = (struct vring_desc){};
+            free_desc(&temp, priv);
 
             if (!(flags & VRING_DESC_F_NEXT))
                 break;

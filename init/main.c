@@ -37,21 +37,25 @@ static void map_exec_file(const char *file, virtual_addr_t addr)
 
     vfs_read(fd, buf, st.st_size);
     kvmmap(current->pagetable, addr, buf, PAGE_SIZE, PTE_R | PTE_W | PTE_X | PTE_U);
-
-    local_flush_tlb_all();
     LOGI();
 }
 
-
 static void do_init()
 {
-    map_exec_file("/test", 0x10000);
+    virtual_addr_t user_addr = 0x20000000UL;
+    map_exec_file("/test", user_addr);
 
     struct pt_regs *regs = current->thread_info.kernel_sp - sizeof(struct pt_regs);
-    regs->sepc = 0x10000;
+    current->ustack = (virtual_addr_t)alloc_page(1);
+    regs->sp = current->ustack + PGSIZE;
+
+    regs->sepc = user_addr;
     regs->sstatus = csr_read(sstatus);
     regs->sstatus &= ~(SSTATUS_SPP);
     regs->sstatus |= SSTATUS_SPIE;
+    kvmmap(current->pagetable, current->ustack, current->ustack, PGSIZE, PTE_R | PTE_W | PTE_U);
+
+    local_flush_tlb_all();
 
     asm volatile("mv tp, %0\n\t"
                  "mv sp, %1\n\t"

@@ -124,7 +124,7 @@ void do_init_trap()
     // set up to take exceptions and traps while in the kernel.
     csr_write(stvec, (uint64)handle_exception);
     // permit Supervisor User Memory access
-    // csr_set(sstatus, 1 << 18);
+    csr_set(sstatus, 1 << 18);
 
     // disable supervisor-mode interrupts.
     csr_clear(sstatus, SSTATUS_SIE);

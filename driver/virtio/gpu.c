@@ -1,3 +1,5 @@
+#include "virtio-internal.h"
+
 #include <virtio/virtio.h>
 
 #include <types.h>
@@ -13,30 +15,16 @@
 
 class(virtio_framebuffer_t, framebuffer_t)
 {
-    struct virtio_device_data *data;
-    struct surface_t *surface;
+    struct virtio_mmio_desc_t *desc;
+    struct virtio_queue_t controlq;
 };
-
-class_impl(virtio_framebuffer_t, framebuffer_t){};
-struct surface_t *virtio_framebuffer_create(framebuffer_t *this)
-{
-    return NULL;
-}
-
-void virtio_framebuffer_destroy(framebuffer_t *this, struct surface_t *s)
-{
-}
-
-void virtio_framebuffer_present(framebuffer_t *this, struct surface_t *s)
-{
-}
 
 static uint32 get_features(uint32 features)
 {
     return features;
 }
 
-static void create_2d_resource(struct virtio_device_data *data, uint32_t resource_id, uint32_t width, uint32_t height)
+static void create_2d_resource(struct virtio_queue_t *data, uint32_t resource_id, uint32_t width, uint32_t height)
 {
     struct virtio_gpu_resource_create_2d *request = calloc(1, sizeof(struct virtio_gpu_resource_create_2d));
     struct virtio_gpu_ctrl_hdr *response = calloc(1, sizeof(struct virtio_gpu_ctrl_hdr));
@@ -53,7 +41,7 @@ static void create_2d_resource(struct virtio_device_data *data, uint32_t resourc
     virtio_send_command_2(data, VRING_DESC(request), VRING_DESC(response));
 }
 
-static void attach_backing(struct virtio_device_data *data, uint32_t resource_id, void *ptr, size_t buf_len)
+static void attach_backing(struct virtio_queue_t *data, uint32_t resource_id, void *ptr, size_t buf_len)
 {
     struct virtio_gpu_resource_attach_backing *request1 = calloc(1, sizeof(struct virtio_gpu_resource_attach_backing));
     struct virtio_gpu_mem_entry *request2 = calloc(1, sizeof(struct virtio_gpu_mem_entry));
@@ -74,7 +62,7 @@ static void attach_backing(struct virtio_device_data *data, uint32_t resource_id
     virtio_send_command_3(data, VRING_DESC(request1), VRING_DESC(request2), VRING_DESC(response));
 }
 
-static void set_scanout(struct virtio_device_data *data, uint32_t resource_id, uint32_t scanout_id, uint32_t x, uint32_t y, uint32_t width, uint32_t height)
+static void set_scanout(struct virtio_queue_t *data, uint32_t resource_id, uint32_t scanout_id, uint32_t x, uint32_t y, uint32_t width, uint32_t height)
 {
     struct virtio_gpu_set_scanout *request = calloc(1, sizeof(struct virtio_gpu_set_scanout));
     struct virtio_gpu_ctrl_hdr *response = calloc(1, sizeof(struct virtio_gpu_ctrl_hdr));
@@ -91,7 +79,7 @@ static void set_scanout(struct virtio_device_data *data, uint32_t resource_id, u
     virtio_send_command_2(data, VRING_DESC(request), VRING_DESC(response));
 }
 
-static void transfer_to_host_2d(struct virtio_device_data *data, uint32_t resource_id, uint32_t x, uint32_t y, uint32_t width, uint32_t height)
+static void transfer_to_host_2d(struct virtio_queue_t *data, uint32_t resource_id, uint32_t x, uint32_t y, uint32_t width, uint32_t height)
 {
     struct virtio_gpu_transfer_to_host_2d *request = calloc(1, sizeof(struct virtio_gpu_transfer_to_host_2d));
     struct virtio_gpu_ctrl_hdr *response = calloc(1, sizeof(struct virtio_gpu_ctrl_hdr));
@@ -107,7 +95,7 @@ static void transfer_to_host_2d(struct virtio_device_data *data, uint32_t resour
     virtio_send_command_2(data, VRING_DESC(request), VRING_DESC(response));
 }
 
-static void flush_resource(struct virtio_device_data *data, uint32_t resource_id, uint32_t x, uint32_t y, uint32_t width, uint32_t height)
+static void flush_resource(struct virtio_queue_t *data, uint32_t resource_id, uint32_t x, uint32_t y, uint32_t width, uint32_t height)
 {
     struct virtio_gpu_resource_flush *request = calloc(1, sizeof(struct virtio_gpu_resource_flush));
     struct virtio_gpu_ctrl_hdr *response = calloc(1, sizeof(struct virtio_gpu_ctrl_hdr));
@@ -123,7 +111,7 @@ static void flush_resource(struct virtio_device_data *data, uint32_t resource_id
     virtio_send_command_2(data, VRING_DESC(request), VRING_DESC(response));
 }
 
-static void update_cursor(struct virtio_device_data *data, uint32_t resource_id, uint32_t scanout_id, uint32_t x, uint32_t y)
+static void update_cursor(struct virtio_queue_t *data, uint32_t resource_id, uint32_t scanout_id, uint32_t x, uint32_t y)
 {
     struct virtio_gpu_update_cursor *request = calloc(1, sizeof(struct virtio_gpu_update_cursor));
     struct virtio_gpu_ctrl_hdr *response = calloc(1, sizeof(struct virtio_gpu_ctrl_hdr));
@@ -143,7 +131,7 @@ static void update_cursor(struct virtio_device_data *data, uint32_t resource_id,
     virtio_send_command_2(data, VRING_DESC(request), VRING_DESC(response));
 }
 
-static void move_cursor(struct virtio_device_data *data, uint32_t resource_id, uint32_t scanout_id, uint32_t x, uint32_t y)
+static void move_cursor(struct virtio_queue_t *data, uint32_t resource_id, uint32_t scanout_id, uint32_t x, uint32_t y)
 {
     struct virtio_gpu_update_cursor *request = calloc(1, sizeof(struct virtio_gpu_update_cursor));
     struct virtio_gpu_ctrl_hdr *response = calloc(1, sizeof(struct virtio_gpu_ctrl_hdr));
@@ -163,7 +151,7 @@ static void move_cursor(struct virtio_device_data *data, uint32_t resource_id, u
     virtio_send_command_2(data, VRING_DESC(request), VRING_DESC(response));
 }
 
-static void get_display_info(struct virtio_device_data *data)
+static void get_display_info(struct virtio_queue_t *data)
 {
     struct virtio_gpu_ctrl_hdr *request = calloc(1, sizeof(struct virtio_gpu_ctrl_hdr));
     struct virtio_gpu_resp_display_info *response = calloc(1, sizeof(struct virtio_gpu_resp_display_info));
@@ -173,36 +161,6 @@ static void get_display_info(struct virtio_device_data *data)
     };
 
     virtio_send_command_2(data, VRING_DESC(request), VRING_DESC(response));
-}
-
-static void virtio_framebuffer_init(framebuffer_t *this)
-{
-    virtio_framebuffer_t *fb = dynamic_cast(virtio_framebuffer_t)(this);
-    struct virtio_device_data *data = fb->data;
-    fb->surface = surface_create(this->width, this->height, 4);
-    memset(fb->surface->pixels, 0xff, this->width * this->width * 4);
-
-    uint32_t resource_id = 1;
-    get_display_info(data);
-
-    struct virtio_gpu_config *config = (struct virtio_gpu_config *)virtio_device_get_configuration_layout(data);
-    LOGI("events_read:" $(config->events_read));
-    LOGI("events_clear:" $(config->events_clear));
-    LOGI("num_scanouts:" $(config->num_scanouts));
-    LOGI("num_capsets:" $(config->num_capsets));
-
-    LOGI("STEP 1: Create a host resource using create 2d");
-    create_2d_resource(data, resource_id, this->width, this->height);
-    LOGI("STEP 2: Attach backing");
-    attach_backing(data, resource_id, fb->surface->pixels, this->width * this->height * 4);
-    LOGI("STEP 3: Set scanout");
-    set_scanout(data, resource_id, 0, 0, 0, this->width, this->height);
-    LOGI("STEP 4: Transfer to host");
-    transfer_to_host_2d(data, resource_id, 0, 0, this->width, this->height);
-    LOGI("Step 5: Flush");
-    flush_resource(data, resource_id, 0, 0, this->width, this->height);
-
-    virtio_mmio_notify(data);
 }
 
 static void free_desc(struct vring_desc *desc, void *data)
@@ -260,11 +218,59 @@ static void free_desc(struct vring_desc *desc, void *data)
     free(hdr);
 }
 
-static void irq_handler(virtio_framebuffer_t *vfb)
+static void irq_handler(void *data)
 {
-    struct virtio_device_data *data = vfb->data;
-    virtio_device_interrupt_ack(data);
-    virtio_device_irq_handler(data, free_desc, NULL);
+    virtio_framebuffer_t *vfb = (virtio_framebuffer_t *)data;
+    struct virtio_mmio_desc_t *desc = vfb->desc;
+    virtio_mmio_interrupt_ack(desc);
+    virtio_device_irq_handler(&vfb->controlq, free_desc, NULL);
+}
+
+class_impl(virtio_framebuffer_t, framebuffer_t){};
+
+struct surface_t *virtio_framebuffer_create(framebuffer_t *this)
+{
+    virtio_framebuffer_t *fb = dynamic_cast(virtio_framebuffer_t)(this);
+    struct virtio_queue_t *data = &fb->controlq;
+    this->surface = surface_create(this->width, this->height, 4);
+    memset(this->surface->pixels, 0, this->width * this->width * 4);
+
+    uint32_t resource_id = 1;
+    get_display_info(data);
+
+    struct virtio_gpu_config *config = (struct virtio_gpu_config *)virtio_mmio_get_config(fb->desc);
+    LOGI("events_read:" $(config->events_read));
+    LOGI("events_clear:" $(config->events_clear));
+    LOGI("num_scanouts:" $(config->num_scanouts));
+    LOGI("num_capsets:" $(config->num_capsets));
+
+    LOGI("STEP 1: Create a host resource using create 2d");
+    create_2d_resource(data, resource_id, this->width, this->height);
+    LOGI("STEP 2: Attach backing");
+    attach_backing(data, resource_id, this->surface->pixels, this->width * this->height * 4);
+    LOGI("STEP 3: Set scanout");
+    set_scanout(data, resource_id, 0, 0, 0, this->width, this->height);
+    LOGI("STEP 4: Transfer to host");
+    transfer_to_host_2d(data, resource_id, 0, 0, this->width, this->height);
+    LOGI("STEP 5: Flush");
+    flush_resource(data, resource_id, 0, 0, this->width, this->height);
+
+    virtio_mmio_notify(fb->desc);
+    return this->surface;
+}
+
+void virtio_framebuffer_destroy(framebuffer_t *this, struct surface_t *s)
+{
+}
+
+void virtio_framebuffer_present(framebuffer_t *this, struct surface_t *s)
+{
+    virtio_framebuffer_t *fb = dynamic_cast(virtio_framebuffer_t)(this);
+    struct virtio_queue_t *data = &fb->controlq;
+    uint32_t resource_id = 1;
+    transfer_to_host_2d(data, resource_id, 0, 0, this->width, this->height);
+    flush_resource(data, resource_id, 0, 0, this->width, this->height);
+    virtio_mmio_notify(fb->desc);
 }
 
 int virtio_framebuffer_probe(device_t *this, xjil_value_t *value)
@@ -280,14 +286,14 @@ int virtio_framebuffer_probe(device_t *this, xjil_value_t *value)
         return -1;
     }
 
-    struct virtio_device_data *data = virtio_mmio_search_device(device_id, virtio_mmio_bus);
+    struct virtio_mmio_desc_t *desc = virtio_mmio_search_device(device_id, virtio_mmio_bus);
 
-    if (!data)
+    if (!desc)
     {
         return -1;
     }
 
-    vfb->data = data;
+    vfb->desc = desc;
 
     framebuffer_t *fb = dynamic_cast(framebuffer_t)(this);
     fb->width = xjil_read_int(value, "width", -1);
@@ -298,9 +304,10 @@ int virtio_framebuffer_probe(device_t *this, xjil_value_t *value)
         return -1;
     }
 
-    virtio_device_setup(vfb->data, get_features);
+    virtio_mmio_setup(vfb->desc, get_features);
+    virtio_mmio_queue_set(vfb->desc, &vfb->controlq, 0);
+
     request_irq(irq, irq_handler, vfb);
-    virtio_framebuffer_init(dynamic_cast(framebuffer_t)(this));
     return 0;
 }
 

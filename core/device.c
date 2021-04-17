@@ -20,7 +20,7 @@ static void register_device(type_index index)
 
     list_for_each_entry(info, child, list)
     {
-        LOGI("Register ["$(__class_name(info->type))"]");
+        LOGI("Register [" $(__class_name(info->type)) "]");
         hmap_add(map, __class_name(info->type), info->type);
     }
 
@@ -61,6 +61,10 @@ void do_init_device()
 
                 if (name)
                 {
+                    if (search_device(name) != NULL)
+                    {
+                        PANIC($(name)" existed");
+                    }
                     hmap_add(device_map, strdup(name), dev);
                 }
             }

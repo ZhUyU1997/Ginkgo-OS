@@ -3,6 +3,6 @@
 
 long sys_putstring(const char *s)
 {
-    LOGI("sys_putstring");
+    LOGI($(s));
     return 0;
 }

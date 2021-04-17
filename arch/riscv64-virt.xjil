@@ -16,5 +16,18 @@
         interrupt: 2,
         width: 640,
         height: 480,
+        name: "virtio-framebuffer"
+    },
+    <virtio_keyboard_t> {
+        device_id: 18,
+        virtio-mmio-bus: 4,
+        interrupt: 5,
+        name: "virtio-keyboard"
+    },
+    <virtio_mouse_t> {
+        device_id: 18,
+        virtio-mmio-bus: 5,
+        interrupt: 6,
+        name: "virtio-mouse"
     },
 ]

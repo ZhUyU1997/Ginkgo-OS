@@ -19,6 +19,7 @@ class(framebuffer_t, device_t)
     /* The width and height in pixel */
     int width, height;
 
+    struct surface_t *surface;
     /* Create a surface */
     struct surface_t *(*create)(struct framebuffer_t * fb);
 

@@ -5,13 +5,17 @@
 
 #define VIRTIO_RING_SIZE (1 << 7)
 
-struct virtio_device_data
+struct virtio_mmio_desc_t
 {
     addr_t addr;
-    vring_t queue;
     uint32 device_id;
-    int idx;
     int virtio_mmio_bus;
+};
+
+struct virtio_queue_t
+{
+    vring_t queue;
+    int idx;
     uint16 ack_used_idx;
 };
 
