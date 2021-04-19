@@ -49,9 +49,19 @@ void do_init_device()
             const char *tag = xjil_value_get_tag(value);
             if (tag)
             {
-                LOGI("Init [" $(tag) "]");
                 type_index index = hmap_search(map, tag);
-                device_t *dev = dynamic_cast(device_t)(new_class_object(index));
+
+                LOGI("Init [" $(tag) "] type-index [" $(index) "]");
+
+                void *obj = new_class_object(index);
+
+                if (obj == NULL)
+                {
+                    LOGE("Failed to new " $(tag));
+                    continue;
+                }
+
+                device_t *dev = dynamic_cast(device_t)(obj);
                 int ret = dev->probe(dev, value);
 
                 if (ret != 0)
@@ -63,7 +73,7 @@ void do_init_device()
                 {
                     if (search_device(name) != NULL)
                     {
-                        PANIC($(name)" existed");
+                        PANIC($(name) " existed");
                     }
                     hmap_add(device_map, strdup(name), dev);
                 }

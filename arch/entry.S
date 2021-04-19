@@ -1,7 +1,7 @@
 #include <asm.h>
 #include <asm-offsets.h>
 #include <csr.h>
-#include <syscall.h>
+#include <syscall_table.h>
 
 .align 4
 .globl handle_exception

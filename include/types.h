@@ -36,6 +36,8 @@ typedef uint64 size_t;
 typedef uint64 register_t;
 typedef uint64 irq_flags_t;
 
+typedef sint64 ssize_t;
+
 #if defined(__alpha__) || defined(__ia64__) || defined(__x86_64__) || defined(_WIN64) || defined(__LP64__) || defined(__LLP64__)
 typedef long int ptrdiff_t;
 typedef unsigned long uintptr_t;

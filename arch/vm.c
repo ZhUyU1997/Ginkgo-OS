@@ -24,6 +24,9 @@ pagetable_t kvmmake(void)
     kpgtbl = (pagetable_t)alloc_page(1);
     memset(kpgtbl, 0, PGSIZE);
 
+    // clint registers
+    kvmmap(kpgtbl, CLINT, CLINT, 0x10000, PTE_R | PTE_W);
+
     // uart registers
     kvmmap(kpgtbl, UART0, UART0, PGSIZE, PTE_R | PTE_W);
 
@@ -59,21 +62,21 @@ void kvminithart()
     local_flush_tlb_all();
 }
 
-pte_t* walk(pagetable_t pagetable, uint64 va, int alloc)
+pte_t *walk(pagetable_t pagetable, uint64 va, int alloc)
 {
     if (va >= MAXVA)
         PANIC("walk");
 
     for (int level = 2; level > 0; level--)
     {
-        pte_t* pte = &pagetable[PX(level, va)];
+        pte_t *pte = &pagetable[PX(level, va)];
         if (*pte & PTE_V)
         {
             pagetable = (pagetable_t)PTE2PA(*pte);
         }
         else
         {
-            if (!alloc || (pagetable = (pde_t*)alloc_page(1)) == 0)
+            if (!alloc || (pagetable = (pde_t *)alloc_page(1)) == 0)
                 return 0;
             memset(pagetable, 0, PGSIZE);
             *pte = PA2PTE(pagetable) | PTE_V;
@@ -84,7 +87,7 @@ pte_t* walk(pagetable_t pagetable, uint64 va, int alloc)
 
 uint64 walkaddr(pagetable_t pagetable, uint64 va)
 {
-    pte_t* pte;
+    pte_t *pte;
     uint64 pa;
 
     if (va >= MAXVA)
@@ -110,7 +113,7 @@ void kvmmap(pagetable_t kpgtbl, uint64 va, uint64 pa, uint64 sz, int perm)
 int mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm)
 {
     uint64 a, last;
-    pte_t* pte;
+    pte_t *pte;
 
     a = PGROUNDDOWN(va);
     last = PGROUNDDOWN(va + size - 1);

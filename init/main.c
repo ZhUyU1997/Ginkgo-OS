@@ -15,14 +15,8 @@
 #include <vfs/vfs.h>
 #include <ctype.h>
 #include <csr.h>
-
-void hello()
-{
-    LOGI("hello");
-
-    while (1)
-        schedule();
-}
+#include <core/syscall.h>
+#include <core/test.h>
 
 static void map_exec_file(const char *file, virtual_addr_t addr)
 {
@@ -79,8 +73,12 @@ void main()
     do_init_device();
     do_init_vfs();
 
-    task_resume(task_create("test0", hello));
+#ifdef UNIT_TEST
+    task_resume(task_create("test", do_all_test));
+#else
     task_resume(task_create("init", do_init));
+#endif
+
 
     local_irq_enable();
     while (1)
