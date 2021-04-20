@@ -1,1 +1,1 @@
-SRC	+= syscall/
+SRC	+= syscall/time/

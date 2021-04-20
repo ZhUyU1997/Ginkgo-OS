@@ -4,6 +4,7 @@
 class(unit_test)
 {
     bool_t result;
+    const char *ut_name;
     void *(*setup)(unit_test * this);
     void (*clean)(unit_test * this, void *data);
     void (*run)(unit_test * this, void *data);
@@ -25,7 +26,11 @@ class(unit_test)
         dynamic_cast(unit_test)(this)->setup = __test_##name##_setup; \
         dynamic_cast(unit_test)(this)->clean = __test_##name##_clean; \
         dynamic_cast(unit_test)(this)->run = __test_##name##_run;     \
+        dynamic_cast(unit_test)(this)->ut_name = #name;               \
     }                                                                 \
     void __test_##name##_run(unit_test *this, void *data)
 
 void do_all_test();
+
+#define ASSERT_FALSE(x) ({if((x)){this->result = FALSE;} })
+#define ASSERT_TRUE(x) ({if(!(x)){this->result = FALSE;} })

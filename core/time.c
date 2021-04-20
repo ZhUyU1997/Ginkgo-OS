@@ -21,15 +21,15 @@ ktime_t sys_clock_get_monotonic()
 
 kticks_t sys_ticks_get()
 {
-    return 0;
+    return kticks_get();
 }
 
 kticks_t sys_ticks_per_second()
 {
-    return 0;
+    return kticks_ticks_per_second();
 }
 
 ktime_t sys_deadline_after(kduration_t nanoseconds)
 {
-    return ns_to_ktime(0);
+    return ktime_add_ns(ktime_get(), nanoseconds);
 }

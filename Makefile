@@ -26,6 +26,11 @@ SRC			+= arch/ arch/head.S arch/entry.S arch/context_switch.S \
 				lib/*.c lib/libc/*.c \
 				lib/xjil/*.c
 
+ifeq ("$(origin UT)", "command line")
+X_DEFINES	+= UNIT_TEST=1
+SRC			+= ut/
+endif
+
 X_PREPARE	:= arch/include/asm-offsets.h
 
 arch/include/asm-offsets.h: arch/asm-offsets.c

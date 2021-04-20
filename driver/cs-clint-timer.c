@@ -38,7 +38,7 @@ static int cs_clint_timer_probe(device_t *this, xjil_value_t *value)
 
     cs->mask = CLOCKSOURCE_MASK(64);
     cs->read = cs_clint_timer_read;
-
+    cs->ticks_per_second = rate;
     register_default_clocksource(cs);
     return 0;
 }

@@ -11,6 +11,7 @@ class(clocksource_t, device_t)
     u64_t mask;
     u32_t mult;
     u32_t shift;
+    kticks_t ticks_per_second;
     u64_t (*read)(struct clocksource_t * cs);
 };
 
@@ -164,3 +165,5 @@ static inline ktime_t clocksource_keeper_read(struct clocksource_t *cs)
 
 void register_default_clocksource(clocksource_t *cs);
 ktime_t ktime_get(void);
+kticks_t kticks_get(void);
+kticks_t kticks_ticks_per_second(void);

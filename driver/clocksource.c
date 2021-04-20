@@ -1,4 +1,5 @@
 #include <clocksource/clocksource.h>
+#include <core/time.h>
 #include <csr.h>
 #include <spinlock.h>
 #include <types.h>
@@ -37,4 +38,34 @@ ktime_t clocksource_ktime_get(struct clocksource_t *cs)
 ktime_t ktime_get(void)
 {
     return clocksource_ktime_get(__clocksource);
+}
+
+kticks_t clocksource_kticks_get(struct clocksource_t *cs)
+{
+    if (cs)
+    {
+        return clocksource_cycle(cs);
+    }
+    return 0;
+}
+
+
+kticks_t clocksource_kticks_per_second(struct clocksource_t *cs)
+{
+    if (cs)
+    {
+        return cs->ticks_per_second;
+    }
+    return 0;
+}
+
+
+kticks_t kticks_get(void)
+{
+    return clocksource_kticks_get(__clocksource);
+}
+
+kticks_t kticks_ticks_per_second(void)
+{
+    return clocksource_kticks_get(__clocksource);
 }
