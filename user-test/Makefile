@@ -14,6 +14,8 @@ X_CFLAGS	+= -std=gnu11 -O3 -g -ggdb \
 X_INCDIRS	+= include
 X_LDFLAGS	+= -z max-page-size=4096  -N -e main -Ttext 0x20000000 -no-pie -nostdlib
 
+X_CLEAN		+= $(obj)/*.asm $(obj)/*.sym
+
 NAME		:= test
 SRC			+= test.c usys.c
 
@@ -21,7 +23,7 @@ define CUSTOM_TARGET_CMD
 echo [OUTPUT] $@; \
 $(LD) $(X_LDFLAGS) -o $@.o $(X_OBJS); \
 $(OC) -O binary -S $@.o $@; \
-$(OD) -S $@.o > test.asm; \
+$(OD) -S $@.o > $(obj)/test.asm; \
 $(OD) -t $@.o | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > $@.o.sym; \
-cp test ../rootfs
+cp $(obj)/test $(obj)/../rootfs
 endef

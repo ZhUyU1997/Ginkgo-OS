@@ -33,6 +33,8 @@ endif
 
 X_PREPARE	:= arch/include/asm-offsets.h
 
+MODULE		+= user-test
+
 arch/include/asm-offsets.h: arch/asm-offsets.c
 	@echo Gen asm-offsets.h
 	@$(CC) $(X_CFLAGS) $(X_CPPFLAGS) -S -o arch/asm-offsets.s arch/asm-offsets.c
