@@ -4,20 +4,20 @@ CROSS_COMPILE	:= riscv64-linux-gnu-
 export CROSS_COMPILE
 
 W_FLAGS		= -Wall -Werror=implicit-function-declaration -Wno-unused-function -Werror=return-type
-X_CFLAGS	+= -std=gnu11 -O3 -g -ggdb \
+X_CFLAGS	= -std=gnu11 -O3 -g -ggdb \
 				$(W_FLAGS) \
 				-march=rv64g -mabi=lp64d -mcmodel=medany \
 				-ffreestanding -fsigned-char \
 				-fno-omit-frame-pointer -fno-common -nostdlib -mno-relax \
 				-fno-pie
 				
-X_INCDIRS	+= include
-X_LDFLAGS	+= -z max-page-size=4096  -N -e main -Ttext 0x20000000 -no-pie -nostdlib
+X_INCDIRS	= include
+X_LDFLAGS	= -z max-page-size=4096  -N -e main -Ttext 0x20000000 -no-pie -nostdlib
 
-X_CLEAN		+= $(obj)/*.asm $(obj)/*.sym
+X_CLEAN		= $(obj)/*.asm $(obj)/*.sym
 
 NAME		:= test
-SRC			+= test.c usys.c
+SRC			= test.c usys.c
 
 define CUSTOM_TARGET_CMD
 echo [OUTPUT] $@; \
