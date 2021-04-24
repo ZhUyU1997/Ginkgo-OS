@@ -5,7 +5,7 @@
 TEST(sys_nanosleep)
 {
     s64_t clock1 = sys_clock_get_monotonic().tv64;
-    sc_status_t s = sys_nanosleep(sys_deadline_after(1000000));
+    status_t s = sys_nanosleep(sys_deadline_after(1000000));
     s64_t clock2 = sys_clock_get_monotonic().tv64;
 
     ASSERT_TRUE(s == SS_OK);
