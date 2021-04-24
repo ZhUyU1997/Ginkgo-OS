@@ -20,7 +20,7 @@ X_CLEAN		+= kernel.asm kernel.sym
 NAME		:= kernel
 SRC			+= arch/ arch/head.S arch/entry.S arch/context_switch.S \
 				arch/start.c arch/vm.c arch/exception.c arch/device.c arch/syscall_table.c \
-				init/*.c core/*.c core/class/*.c core/graphic/*.c mm/*.c \
+				init/*.c core/*.c core/class/*.c core/graphic/*.c core/sys/*.c mm/*.c \
 				fs/cpio/*.c fs/*.c \
 				driver/*.c driver/virtio/*.c \
 				lib/*.c lib/libc/*.c \

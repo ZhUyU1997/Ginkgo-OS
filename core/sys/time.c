@@ -3,12 +3,12 @@
 #include <core/errno.h>
 #include <clocksource/clocksource.h>
 
-sc_status_t sys_nanosleep(ktime_t deadline)
+status_t sys_nanosleep(ktime_t deadline)
 {
     return SS_OK;
 }
 
-sc_status_t sys_clock_get(clock_id_t type, ktime_t *time)
+status_t sys_clock_get(clock_id_t type, ktime_t *time)
 {
     *time = ktime_get();
     return SS_OK;
