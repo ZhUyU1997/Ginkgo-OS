@@ -10,10 +10,8 @@
 #include <uart.h>
 #include <trap.h>
 
-#define NCPU 1 // maximum number of CPUs
-
 // entry.S needs one stack per CPU.
-__attribute__((aligned(16))) char stack0[4096 * NCPU];
+__attribute__((aligned(16))) char stack0[4096 * CONFIG_CPU];
 
 void start()
 {
