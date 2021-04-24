@@ -114,7 +114,7 @@ static inline task_t *task_self(void)
 
 void switch_context(struct context *, struct context *);
 void schedule();
-void task_init();
+void do_task_init();
 task_t *task_create(const char *name, task_func_t func);
 void task_resume(task_t *task);
 void task_suspend(task_t *task);
