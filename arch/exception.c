@@ -7,21 +7,10 @@
 #include <task.h>
 #include <log.h>
 #include <interrupt/interrupt.h>
+#include <clockevent/clockevent.h>
 
 extern void handle_exception();
 extern void timer_vector();
-
-void timertrap()
-{
-    // LOGI("timertrap");
-    // each CPU has a separate source of timer interrupts.
-    int id = csr_read(mhartid);
-    // ask the CLINT for a timer interrupt.
-    int interval = 10000000; // cycles; about 1/10th second in qemu.
-    *(uint64 *)CLINT_MTIMECMP(id) = *(uint64 *)CLINT_MTIME + interval;
-}
-
-#define NCPU 1 // maximum number of CPUs
 
 struct
 {
@@ -30,7 +19,7 @@ struct
     uint64 a3;
     uint64 mtimecmp;
     uint64 interval;
-} timer_scratch[NCPU][5];
+} timer_scratch[CONFIG_CPU];
 
 void do_timer_init()
 {
@@ -38,17 +27,13 @@ void do_timer_init()
     int id = csr_read(mhartid);
 
     // ask the CLINT for a timer interrupt.
-    int interval = 10000000;
-    *(uint64 *)CLINT_MTIMECMP(id) = *(uint64 *)CLINT_MTIME + interval;
-
-    timer_scratch[id]->interval = interval; // cycles; about 1/10th second in qemu.
-    timer_scratch[id]->mtimecmp = CLINT_MTIMECMP(id);
+    *(uint64 *)CLINT_MTIMECMP(id) = 0xffffffff;
+    timer_scratch[id].interval = 0xffffffff; // cycles; about 1/10th second in qemu.
+    timer_scratch[id].mtimecmp = CLINT_MTIMECMP(id);
 
     csr_write(mscratch, (uint64)&timer_scratch[id]);
-    // set the machine-mode trap handler.
-    csr_write(mtvec, (uint64)timer_vector);
-    // enable machine-mode timer interrupts.
-    csr_set(mie, MIE_MTIE);
+    csr_write(mtvec, (uint64)timer_vector); // set the machine-mode trap handler.
+    csr_set(mie, MIE_MTIE); // enable machine-mode timer interrupts.
 }
 
 void do_IRQ(struct pt_regs *regs)
@@ -90,6 +75,7 @@ void do_IRQ(struct pt_regs *regs)
             // acknowledge the software interrupt by clearing
             // the SSIP bit in sip.
             csr_clear(sip, 2);
+            handle_clockevent();
             break;
         case 9:
             interrupt_handle_exception();
