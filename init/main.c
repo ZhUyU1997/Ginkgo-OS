@@ -17,6 +17,7 @@
 #include <csr.h>
 #include <core/syscall.h>
 #include <core/test.h>
+#include <core/timer.h>
 
 static void map_exec_file(const char *file, virtual_addr_t addr)
 {
@@ -24,13 +25,13 @@ static void map_exec_file(const char *file, virtual_addr_t addr)
     int fd = vfs_open(file, O_RDONLY, 0);
     struct vfs_stat_t st;
     vfs_fstat(fd, &st);
-
-    void *buf = alloc_page(1);
+    int page_num = (st.st_size + PAGE_SIZE - 1) >> PAGE_SHIFT;
+    void *buf = alloc_page(page_num);
     LOGI("size:" $((int)st.st_size));
     LOGI("buf:" $(buf));
 
     vfs_read(fd, buf, st.st_size);
-    kvmmap(current->pagetable, addr, buf, PAGE_SIZE, PTE_R | PTE_W | PTE_X | PTE_U);
+    pagetable_map(current->pagetable, addr, buf, st.st_size, PTE_R | PTE_W | PTE_X | PTE_U);
     LOGI();
 }
 
@@ -47,7 +48,8 @@ static void do_init()
     regs->sstatus = csr_read(sstatus);
     regs->sstatus &= ~(SSTATUS_SPP);
     regs->sstatus |= SSTATUS_SPIE;
-    kvmmap(current->pagetable, current->ustack, current->ustack, PGSIZE, PTE_R | PTE_W | PTE_U);
+
+    pagetable_map(current->pagetable, current->ustack, current->ustack, PGSIZE, PTE_R | PTE_W | PTE_U);
 
     local_flush_tlb_all();
 
@@ -66,9 +68,8 @@ void main()
     do_init_mem();
     do_init_class();
 
-    kvminit();
-    kvminithart();
-    task_init();
+    do_kvm_init();
+    do_task_init();
 
     do_init_device();
     do_init_vfs();

@@ -40,10 +40,14 @@ static inline void scheduler_dequeue_task(task_t *task)
     list_del_init(&task->list);
 }
 
+static void switch_mm(task_t *task)
+{
+    pagetable_active(task->pagetable);
+}
+
 void schedule()
 {
-    irq_flags_t flags;
-    spin_lock_irqsave(&sche_lock, flags);
+    spin_lock(&sche_lock);
 
     if (current->status == TASK_STATUS_SUSPEND)
     {
@@ -61,17 +65,19 @@ void schedule()
     current = task;
 
     current->status = TASK_STATUS_RUNNING;
-    switch_context(&old->context, &current->context);
 
-    spin_unlock_irqrestore(&sche_lock, flags);
+    spin_unlock(&sche_lock);
+
+    switch_mm(current);
+    switch_context(&old->context, &current->context);
 }
 
 void task_mapstacks(task_t *task)
 {
-    kvmmap(task->pagetable, task->kstack, task->kstack, PGSIZE, PTE_R | PTE_W);
+    pagetable_map(task->pagetable, task->kstack, task->kstack, PGSIZE, PTE_R | PTE_W);
 }
 
-void task_init()
+void do_task_init()
 {
     spin_lock_init(&sche_lock);
     init_list_head(&idle->list);
@@ -94,7 +100,9 @@ task_t *task_create(const char *name, task_func_t func)
 
     task->kstack = (virtual_addr_t)task;
 
-    task->pagetable = kernel_pagetable;
+    task->pagetable = pagetable_create();
+    map_kernel_page(task->pagetable);
+
     task->name = name;
 
     task->thread_info.kernel_sp = task->kstack + PGSIZE;

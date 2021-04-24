@@ -7,6 +7,10 @@
 #include "string.h"
 #include "log.h"
 
+pagetable_t kernel_pagetable_create(void);
+pte_t *walk(pagetable_t pagetable, uint64 va, int alloc);
+uint64 walk_addr(pagetable_t pagetable, uint64 va);
+
 /*
  * the kernel's page table.
  */
@@ -17,48 +21,42 @@ extern char etext[]; // kernel.ld sets this to end of kernel code.
 extern char trampoline[]; // trampoline.S
 
 // Make a direct-map page table for the kernel.
-pagetable_t kvmmake(void)
+void map_kernel_page(pagetable_t pagetable)
 {
-    pagetable_t kpgtbl;
-
-    kpgtbl = (pagetable_t)alloc_page(1);
-    memset(kpgtbl, 0, PGSIZE);
-
     // clint registers
-    kvmmap(kpgtbl, CLINT, CLINT, 0x10000, PTE_R | PTE_W);
-
+    pagetable_map(pagetable, CLINT, CLINT, 0x10000, PTE_R | PTE_W);
     // uart registers
-    kvmmap(kpgtbl, UART0, UART0, PGSIZE, PTE_R | PTE_W);
-
+    pagetable_map(pagetable, UART0, UART0, PGSIZE, PTE_R | PTE_W);
     // virtio mmio disk interface
-    kvmmap(kpgtbl, VIRTIO0, VIRTIO0, PGSIZE * 8, PTE_R | PTE_W);
-
+    pagetable_map(pagetable, VIRTIO0, VIRTIO0, PGSIZE * 8, PTE_R | PTE_W);
     // PLIC
-    kvmmap(kpgtbl, PLIC_ADDR, PLIC_ADDR, 0x400000, PTE_R | PTE_W);
-
+    pagetable_map(pagetable, PLIC_ADDR, PLIC_ADDR, 0x400000, PTE_R | PTE_W);
     // map kernel text executable and read-only.
-    kvmmap(kpgtbl, KERNBASE, KERNBASE, (uint64)etext - KERNBASE, PTE_R | PTE_X);
-
+    pagetable_map(pagetable, KERNBASE, KERNBASE, (uint64)etext - KERNBASE, PTE_R | PTE_X);
     // map kernel data and the physical RAM we'll make use of.
-    kvmmap(kpgtbl, (uint64)etext, (uint64)etext, PHYSTOP - (uint64)etext, PTE_R | PTE_W);
+    pagetable_map(pagetable, (uint64)etext, (uint64)etext, PHYSTOP - (uint64)etext, PTE_R | PTE_W);
+}
 
-    // map kernel stacks
-    // proc_mapstacks(kpgtbl);
-
-    return kpgtbl;
+pagetable_t pagetable_create(void)
+{
+    pagetable_t pt = (pagetable_t)alloc_page(1);
+    memset(pt, 0, PGSIZE);
+    return pt;
 }
 
 // Initialize the one kernel_pagetable
-void kvminit(void)
-{
-    kernel_pagetable = kvmmake();
-}
-
 // Switch h/w page table register to the kernel's page table,
 // and enable paging.
-void kvminithart()
+void do_kvm_init(void)
 {
-    csr_write(satp, MAKE_SATP(kernel_pagetable));
+    kernel_pagetable = pagetable_create();
+    map_kernel_page(kernel_pagetable);
+    pagetable_active(kernel_pagetable);
+}
+
+void pagetable_active(pagetable_t pagetable)
+{
+    csr_write(satp, MAKE_SATP(pagetable));
     local_flush_tlb_all();
 }
 
@@ -76,8 +74,20 @@ pte_t *walk(pagetable_t pagetable, uint64 va, int alloc)
         }
         else
         {
-            if (!alloc || (pagetable = (pde_t *)alloc_page(1)) == 0)
+            if (alloc)
+            {
+                pagetable = (pde_t *)alloc_page(1);
+                LOGI("create sub pagetable");
+                if (pagetable == 0)
+                {
+                    return 0;
+                }
+            }
+            else
+            {
                 return 0;
+            }
+
             memset(pagetable, 0, PGSIZE);
             *pte = PA2PTE(pagetable) | PTE_V;
         }
@@ -85,7 +95,7 @@ pte_t *walk(pagetable_t pagetable, uint64 va, int alloc)
     return &pagetable[PX(0, va)];
 }
 
-uint64 walkaddr(pagetable_t pagetable, uint64 va)
+uint64 walk_addr(pagetable_t pagetable, uint64 va)
 {
     pte_t *pte;
     uint64 pa;
@@ -104,13 +114,7 @@ uint64 walkaddr(pagetable_t pagetable, uint64 va)
     return pa;
 }
 
-void kvmmap(pagetable_t kpgtbl, uint64 va, uint64 pa, uint64 sz, int perm)
-{
-    if (mappages(kpgtbl, va, sz, pa, perm) != 0)
-        PANIC("kvmmap");
-}
-
-int mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm)
+int pagetable_map(pagetable_t pagetable, uint64 va, uint64 pa, uint64 size, int perm)
 {
     uint64 a, last;
     pte_t *pte;
