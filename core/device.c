@@ -21,7 +21,7 @@ static void register_device(type_index index)
     list_for_each_entry(info, child, list)
     {
         LOGI("Register [" $(__class_name(info->type)) "]");
-        hmap_add(map, __class_name(info->type), info->type);
+        hmap_add(map, __class_name(info->type), &info->type);
     }
 
     list_for_each_entry(info, child, list)
@@ -49,16 +49,20 @@ void do_init_device()
             const char *tag = xjil_value_get_tag(value);
             if (tag)
             {
-                type_index index = hmap_search(map, tag);
+                type_index *index = hmap_search(map, tag);
 
-                LOGI("Init [" $(tag) "] type-index [" $(index) "]");
+                if(index == NULL)
+                {
+                    PANIC("Unable to find "$(tag));
+                }
 
-                void *obj = new_class_object(index);
+                LOGI("Init [" $(tag) "] type-index [" $(*index) "]");
+
+                void *obj = new_class_object(*index);
 
                 if (obj == NULL)
                 {
-                    LOGE("Failed to new " $(tag));
-                    continue;
+                    PANIC("Failed to new " $(tag));
                 }
 
                 device_t *dev = dynamic_cast(device_t)(obj);
