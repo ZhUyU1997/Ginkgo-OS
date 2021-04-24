@@ -3,6 +3,10 @@
         addr: 0x02000000,
         rate: 10000000,
     },
+    <clint_clockevent_t>{
+        addr: 0x02000000,
+        rate: 10000000,
+    },
     <plic_irqchip_t>{
         name: "riscv-plic-irqchip",
         interrupt-base: 1,
