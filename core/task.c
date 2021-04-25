@@ -91,14 +91,21 @@ void do_task_init()
     asm volatile("mv tp, %0" ::"r"(current));
 }
 
+static void task_helper()
+{
+    task_func_t func = (task_func_t)current->context.s0;
+    func();
+    task_destroy(current);
+}
+
 task_t *task_create(const char *name, task_func_t func)
 {
     LOGD("Create task: " $(name));
-    task_t *task = (task_t *)alloc_page(1);
+    task_t *task = (task_t *)malloc(sizeof(task_t));
     init_list_head(&task->list);
     init_list_head(&task->mlist);
 
-    task->kstack = (virtual_addr_t)task;
+    task->kstack = (virtual_addr_t)alloc_page(1);;
 
     task->pagetable = pagetable_create();
     map_kernel_page(task->pagetable);
@@ -106,7 +113,8 @@ task_t *task_create(const char *name, task_func_t func)
     task->name = name;
 
     task->thread_info.kernel_sp = task->kstack + PGSIZE;
-    task->context.ra = (register_t)func;
+    task->context.ra = (register_t)task_helper;
+    task->context.s0 = (register_t)func;
     task->context.sp = task->thread_info.kernel_sp - sizeof(struct pt_regs);
 
     LOGI("context.sp:" $(task->context.sp));
@@ -114,6 +122,21 @@ task_t *task_create(const char *name, task_func_t func)
     task_mapstacks(task);
     task->status = TASK_STATUS_SUSPEND;
     return task;
+}
+
+void task_destroy(task_t *task)
+{
+    if (task)
+    {
+        if(task->kstack)
+        {
+            free_page(task->kstack);
+        }
+        //TODO: free pagetable
+
+        task->status = TASK_STATUS_SUSPEND;
+        schedule();
+    }
 }
 
 void task_resume(task_t *task)
@@ -139,7 +162,6 @@ void task_suspend(task_t *task)
         else if (task->status == TASK_STATUS_RUNNING)
         {
             task->status = TASK_STATUS_SUSPEND;
-            LOGI();
             schedule();
         }
     }

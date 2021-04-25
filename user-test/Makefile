@@ -10,7 +10,7 @@ X_CFLAGS	= -std=gnu11 -O3 -g -ggdb \
 				-ffreestanding -fsigned-char \
 				-fno-omit-frame-pointer -fno-common -nostdlib -mno-relax \
 				-fno-pie
-				
+
 X_INCDIRS	= include
 X_LDFLAGS	= -z max-page-size=4096  -N -e main -Ttext 0x20000000 -no-pie -nostdlib
 

@@ -27,4 +27,5 @@ class(device_t)
 void do_init_device();
 
 device_t *search_device(const char *name);
-#define search_device_with_class(type, name) ((type *) class_cast(type##_class_type, (char *)(search_device(name))))
+
+#define search_device_with_class(type, name) ((type *)class_cast(type##_class_type, (char *)(search_device(name))))

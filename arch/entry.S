@@ -16,7 +16,7 @@ handle_exception:
 	bnez tp, _save_context
 
 _restore_kernel_tpsp:
-        csrr tp, CSR_SSCRATCH
+    csrr tp, CSR_SSCRATCH
 	REG_S sp, TASK_TI_KERNEL_SP(tp)
 _save_context:
 	REG_S sp, TASK_TI_USER_SP(tp)

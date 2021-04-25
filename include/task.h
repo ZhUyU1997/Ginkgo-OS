@@ -118,3 +118,4 @@ void do_task_init();
 task_t *task_create(const char *name, task_func_t func);
 void task_resume(task_t *task);
 void task_suspend(task_t *task);
+void task_destroy(task_t *task);

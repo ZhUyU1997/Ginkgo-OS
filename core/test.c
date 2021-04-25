@@ -44,7 +44,8 @@ static void print_time(ktime_t t)
     }
     printv(" " $((int)(ktime_to_ns(t) / div)) $(unit));
 }
-static void do_unit_test(type_index index, int order)
+
+static void do_unit_test(type_index index, int order, int *pass, int *fail)
 {
     struct list_head *child = get_class_child(index);
     struct class_table_info *info;
@@ -80,10 +81,12 @@ static void do_unit_test(type_index index, int order)
         if (ut->result)
         {
             printv(" \e[32m[PASS]\e[0m\n");
+            (*pass)++;
         }
         else
         {
             printv(" \e[31m[FAIL]\e[0m\n");
+            (*fail)++;
         }
 
         order++;
@@ -93,17 +96,16 @@ static void do_unit_test(type_index index, int order)
 
     list_for_each_entry(info, child, list)
     {
-        do_unit_test(info->type, order);
+        do_unit_test(info->type, order, pass, fail);
     }
 }
 
 void do_all_test()
 {
     printv("\n\n##################### Unit Test #####################\n");
+    int pass = 0, fail = 0;
+    do_unit_test(class_type(unit_test), 1, &pass, &fail);
+    printv("\nPASS ["$(pass)"] FAIL ["$(fail)"]\n");
 
-    do_unit_test(class_type(unit_test), 1);
     printv("#####################    END    #####################\n");
-
-    while (1)
-        ;
 }
