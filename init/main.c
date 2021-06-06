@@ -19,48 +19,6 @@
 #include <core/test.h>
 #include <core/timer.h>
 
-static void map_exec_file(const char *file, virtual_addr_t addr)
-{
-    vfs_mount("virtio-block", "/", "cpio", MOUNT_RO);
-    int fd = vfs_open(file, O_RDONLY, 0);
-    struct vfs_stat_t st;
-    vfs_fstat(fd, &st);
-    int page_num = (st.st_size + PAGE_SIZE - 1) >> PAGE_SHIFT;
-    void *buf = alloc_page(page_num);
-    LOGI("size:" $((int)st.st_size));
-    LOGI("buf:" $(buf));
-
-    vfs_read(fd, buf, st.st_size);
-    pagetable_map(current->pagetable, addr, buf, st.st_size, PTE_R | PTE_W | PTE_X | PTE_U);
-    LOGI();
-}
-
-static void do_init()
-{
-    virtual_addr_t user_addr = 0x20000000UL;
-    map_exec_file("/test", user_addr);
-
-    struct pt_regs *regs = current->thread_info.kernel_sp - sizeof(struct pt_regs);
-    current->ustack = (virtual_addr_t)alloc_page(1);
-    regs->sp = current->ustack + PGSIZE;
-
-    regs->sepc = user_addr;
-    regs->sstatus = csr_read(sstatus);
-    regs->sstatus &= ~(SSTATUS_SPP);
-    regs->sstatus |= SSTATUS_SPIE;
-
-    pagetable_map(current->pagetable, current->ustack, current->ustack, PGSIZE, PTE_R | PTE_W | PTE_U);
-
-    local_flush_tlb_all();
-
-    asm volatile("mv tp, %0\n\t"
-                 "mv sp, %1\n\t"
-                 "la ra, ret_from_exception\n\t"
-                 "ret\n\t"
-                 :
-                 : "r"(current), "r"(regs));
-}
-
 void main()
 {
     LOGI("main");
@@ -75,12 +33,10 @@ void main()
     do_init_vfs();
 
 #ifdef UNIT_TEST
-    task_resume(task_create("test", do_all_test));
-#else
-    task_resume(task_create("init", do_init));
+    thread_resume(kthread_create(do_all_test, NULL));
 #endif
 
-
+    launch_user_init("/test");
     local_irq_enable();
     while (1)
         schedule();

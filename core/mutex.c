@@ -10,7 +10,7 @@ void mutex_init(struct mutex_t *m)
 
 void mutex_lock(struct mutex_t *m)
 {
-	task_t *self;
+	thread_t *self;
 
 	while (atomic_cmpxchg(&m->atomic, 1, 0) != 1)
 	{
@@ -19,13 +19,13 @@ void mutex_lock(struct mutex_t *m)
 		if (list_empty_careful(&self->mlist))
 			list_add_tail(&self->mlist, &m->mwait);
 		spin_unlock(&m->lock);
-		task_suspend(self);
+		thread_suspend(self);
 	}
 }
 
 void mutex_unlock(struct mutex_t *m)
 {
-	task_t *pos, *n;
+	thread_t *pos, *n;
 
 	if (atomic_cmpxchg(&m->atomic, 0, 1) == 0)
 	{
@@ -35,7 +35,7 @@ void mutex_unlock(struct mutex_t *m)
 			list_for_each_entry_safe(pos, n, &m->mwait, mlist)
 			{
 				list_del_init(&pos->mlist);
-				task_resume(pos);
+				thread_resume(pos);
 				break;
 			}
 		}

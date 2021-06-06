@@ -127,3 +127,6 @@ static inline void local_flush_tlb_page(unsigned long addr)
 
 typedef uint64 pte_t;
 typedef uint64 *pagetable_t; // 512 PTEs
+
+#define phys_to_virt(x) (x)
+#define virt_to_phys(x) (x)

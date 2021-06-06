@@ -3,8 +3,10 @@
 
 void asm_offsets(void)
 {
-    OFFSET(TASK_TI_KERNEL_SP, task_t, thread_info.kernel_sp);
-    OFFSET(TASK_TI_USER_SP, task_t, thread_info.user_sp);
+    OFFSET(TASK_TI_KERNEL_SP, thread_t, thread_info.kernel_sp);
+    OFFSET(TASK_TI_USER_SP, thread_t, thread_info.user_sp);
+    OFFSET(TASK_CTX, thread_t, context);
+
     DEFINE(PT_SIZE, sizeof(struct pt_regs));
     OFFSET(PT_SEPC, pt_regs, sepc);
     OFFSET(PT_RA, pt_regs, ra);

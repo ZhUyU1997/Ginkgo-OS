@@ -10,10 +10,11 @@ static void test()
     isCalled = TRUE;
 }
 
-TEST(task_create)
+TEST(thread_create)
 {
-    task_resume(task_create("init", test));
+    thread_resume(thread_create("init", test));
     schedule();
-    while (isCalled == FALSE);
+    while (isCalled == FALSE)
+        ;
     ASSERT_TRUE(isCalled);
 }

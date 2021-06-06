@@ -24,17 +24,17 @@ extern char trampoline[]; // trampoline.S
 void map_kernel_page(pagetable_t pagetable)
 {
     // clint registers
-    pagetable_map(pagetable, CLINT, CLINT, 0x10000, PTE_R | PTE_W);
+    map_range_in_pgtbl(pagetable, CLINT, CLINT, 0x10000, PTE_R | PTE_W);
     // uart registers
-    pagetable_map(pagetable, UART0, UART0, PGSIZE, PTE_R | PTE_W);
+    map_range_in_pgtbl(pagetable, UART0, UART0, PGSIZE, PTE_R | PTE_W);
     // virtio mmio disk interface
-    pagetable_map(pagetable, VIRTIO0, VIRTIO0, PGSIZE * 8, PTE_R | PTE_W);
+    map_range_in_pgtbl(pagetable, VIRTIO0, VIRTIO0, PGSIZE * 8, PTE_R | PTE_W);
     // PLIC
-    pagetable_map(pagetable, PLIC_ADDR, PLIC_ADDR, 0x400000, PTE_R | PTE_W);
+    map_range_in_pgtbl(pagetable, PLIC_ADDR, PLIC_ADDR, 0x400000, PTE_R | PTE_W);
     // map kernel text executable and read-only.
-    pagetable_map(pagetable, KERNBASE, KERNBASE, (uint64)etext - KERNBASE, PTE_R | PTE_X);
+    map_range_in_pgtbl(pagetable, KERNBASE, KERNBASE, (uint64)etext - KERNBASE, PTE_R | PTE_X);
     // map kernel data and the physical RAM we'll make use of.
-    pagetable_map(pagetable, (uint64)etext, (uint64)etext, PHYSTOP - (uint64)etext, PTE_R | PTE_W);
+    map_range_in_pgtbl(pagetable, (uint64)etext, (uint64)etext, PHYSTOP - (uint64)etext, PTE_R | PTE_W);
 }
 
 pagetable_t pagetable_create(void)
@@ -114,7 +114,7 @@ uint64 walk_addr(pagetable_t pagetable, uint64 va)
     return pa;
 }
 
-int pagetable_map(pagetable_t pagetable, uint64 va, uint64 pa, uint64 size, int perm)
+int map_range_in_pgtbl(pagetable_t pagetable, vaddr_t va, paddr_t pa, size_t size, int perm)
 {
     uint64 a, last;
     pte_t *pte;
@@ -138,6 +138,33 @@ int pagetable_map(pagetable_t pagetable, uint64 va, uint64 pa, uint64 size, int 
             break;
         a += PGSIZE;
         pa += PGSIZE;
+    }
+    return 0;
+}
+
+int unmap_range_in_pgtbl(pagetable_t pagetable, vaddr_t va, size_t size)
+{
+    uint64 a, last;
+    pte_t *pte;
+
+    a = PGROUNDDOWN(va);
+    last = PGROUNDDOWN(va + size - 1);
+    for (;;)
+    {
+        if ((pte = walk(pagetable, a, 0)) == 0)
+        {
+            PANIC("walk(pagetable, a, 0)) == 0");
+            return -1;
+        }
+
+        if (*pte & PTE_V)
+        {
+            LOGE("Remap!");
+        }
+        *pte = 0;
+        if (a == last)
+            break;
+        a += PGSIZE;
     }
     return 0;
 }

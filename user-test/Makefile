@@ -11,13 +11,19 @@ X_CFLAGS	= -std=gnu11 -O3 -g -ggdb \
 				-fno-omit-frame-pointer -fno-common -nostdlib -mno-relax \
 				-fno-pie
 
-X_INCDIRS	= include
+X_INCDIRS	= $(src)/include
 X_LDFLAGS	= -z max-page-size=4096  -N -e main -Ttext 0x20000000 -no-pie -nostdlib
 
 X_CLEAN		= $(obj)/*.asm $(obj)/*.sym
 
 NAME		:= test
-SRC			= test.c usys.c
+SRC			= test.c usys.c lib.c
+
+X_PREPARE	:= $(src)/include/syscall_table.h
+
+$(src)/include/syscall_table.h: $(src)/../arch/include/syscall_table.h
+	@echo CP $@
+	@cp $< $@
 
 define CUSTOM_TARGET_CMD
 echo [OUTPUT] $@; \

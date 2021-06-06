@@ -42,7 +42,7 @@ void wake_up(struct wait_queue_head *wq_head);
             prepare_to_wait_queue(wq_head, &wq_entry); \
             if (condition)                             \
                 break;                                 \
-            task_resume(current);                      \
+            thread_resume(current);                    \
         }                                              \
         remove_wait_queue(wq_head, &wq_entry);         \
     } while (0)

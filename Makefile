@@ -31,16 +31,23 @@ X_DEFINES	+= UNIT_TEST=1
 SRC			+= ut/
 endif
 
-X_PREPARE	:= arch/include/asm-offsets.h
+X_PREPARE	:= arch/include/asm-offsets.h arch/include/syscall_table.h
 
 MODULE		+= user-test
 
 arch/include/asm-offsets.h: arch/asm-offsets.c
-	@echo Gen asm-offsets.h
-	@$(CC) $(X_CFLAGS) $(X_CPPFLAGS) -S -o arch/asm-offsets.s arch/asm-offsets.c
-	@echo "#pragma once" > arch/include/asm-offsets.h
-	@cat arch/asm-offsets.s | sed -n '/define/s/\.ascii\ \"\([^"]*\)\"/\1/p' >> arch/include/asm-offsets.h
-	@rm arch/asm-offsets.s
+	@echo Gen $@
+	@$(CC) $(X_CFLAGS) $(X_CPPFLAGS) -S -o $<.s $<
+	@echo "#pragma once" > $@
+	@cat $<.s | sed -n '/define/s/\.ascii\ \"\([^"]*\)\"/\1/p' >> $@
+	@rm $<.s
+
+arch/include/syscall_table.h: arch/syscall_def.c
+	@echo Gen $@
+	@$(CC) $(X_CFLAGS) $(X_CPPFLAGS) -S -o $<.s $<
+	@echo "#pragma once" > $@
+	@cat $<.s | sed -n '/define/s/\.ascii\ \"\([^"]*\)\"/\1/p' >> $@
+	@rm $<.s
 
 define CUSTOM_TARGET_CMD
 echo [KERNEL] $@; \

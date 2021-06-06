@@ -20,8 +20,8 @@ void init_wait_entry(struct wait_queue_entry *wq_entry)
 
 int default_wake_function(wait_queue_entry_t *curr)
 {
-	task_t *task = curr->priv;
-	task_resume(task);
+	thread_t *task = curr->priv;
+	thread_resume(task);
 	return 1;
 }
 

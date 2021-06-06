@@ -1,8 +1,11 @@
 #pragma once
 
-#include "types.h"
-#include "riscv.h"
-#include "list.h"
+#include <core/class.h>
+#include <types.h>
+#include <riscv.h>
+#include <list.h>
+#include <core/kobject.h>
+#include <core/vmspace.h>
 
 struct pt_regs
 {
@@ -84,38 +87,66 @@ enum task_status_t
 	TASK_STATUS_RUNNING = 0,
 	TASK_STATUS_READY = 1,
 	TASK_STATUS_SUSPEND = 2,
+	TASK_STATUS_EXIT = 3,
 };
 
-typedef struct task_t
+#define MAX_SLOTS_SIZE 64
+
+#define PROCESS_OBJ_ID 0
+#define VMSPACE_OBJ_ID 1
+
+struct slot_table
+{
+	unsigned int slots_size;
+	kobject_t **slots;
+};
+
+class(process_t, kobject_t)
+{
+	struct list_head thread_list;
+	struct slot_table slot_table;
+};
+
+class(thread_t, kobject_t)
 {
 	struct thread_info thread_info;
-
-	struct list_head list;
+	struct list_head node;
+	struct list_head ready_queue_node;
 	struct list_head mlist;
 
-	int id; // Process ID
+	process_t *process;
+	vmspace_t *vmspace;
+
 	enum task_status_t status;
 	virtual_addr_t kstack;
-	virtual_addr_t ustack;
 	size_t sz;
-	pagetable_t pagetable;
 	struct context context;
 	const char *name;
-} task_t;
+};
 
 typedef void (*task_func_t)();
 
-extern task_t *current;
+extern thread_t *current;
 
-static inline task_t *task_self(void)
+#define current_process (current->process)
+
+static inline thread_t *task_self(void)
 {
 	return current;
 }
 
-void switch_context(struct context *, struct context *);
+void switch_to(thread_t *, thread_t *);
+void load_context(thread_t *);
 void schedule();
 void do_task_init();
-task_t *task_create(const char *name, task_func_t func);
-void task_resume(task_t *task);
-void task_suspend(task_t *task);
-void task_destroy(task_t *task);
+void launch_user_init(const char *filename);
+thread_t *thread_create(process_t *process, u64_t stack, u64_t pc, u64_t arg);
+void thread_resume(thread_t *);
+void thread_suspend(thread_t *);
+void thread_destroy(thread_t *);
+
+int slot_alloc(process_t *process);
+kobject_t *slot_get(process_t *process, int slot);
+void slot_install(process_t *process, int slot_id, kobject_t *obj);
+int slot_alloc_install(process_t *process, kobject_t *obj);
+int slot_copy(process_t *src, process_t *dest, int slot);
