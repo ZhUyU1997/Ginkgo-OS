@@ -6,7 +6,7 @@ SECTIONS
     . = 0x20000000;
 
     .text : {
-        user-test/lib/libuser.a:libmain.S.o(.text)
+        *libuser.a:libmain.S.o(.text)
         *(.text .text.*)
         . = ALIGN(0x1000);
         PROVIDE(etext = .);
