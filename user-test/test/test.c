@@ -1,5 +1,6 @@
 #include <syscall.h>
 #include "types.h"
+#include "print.h"
 
 typedef enum
 {
@@ -22,15 +23,19 @@ void *memset(void *dst, int c, uint32 n)
     return dst;
 }
 
-int main()
+int main(int argc, char **argv)
 {
+    printf("%d\n",argc);
+    printf("%p\n",argv);
+    printf("%s\n",argv[0]);
+    printf("%s\n",argv[1]);
 
-    usys_putstring("main");
+    printf("main\n");
     int slot = usys_vmo_create(1024, VMO_DATA);
-    char buf[1024] = "hello vmo";
+    char buf[1024] = "hello vmo\n";
     usys_vmo_write(slot, 0, buf, 1024);
     usys_vmo_read(slot, 0, buf, 1024);
-    usys_putstring(buf);
+    printf(buf);
 
     while (1)
         ;

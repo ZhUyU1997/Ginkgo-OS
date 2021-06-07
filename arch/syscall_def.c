@@ -6,7 +6,7 @@ void asm_offsets(void)
 {
 	int index = 0;
 	SYSCALL(ni_syscall);
-	SYSCALL(putstring);
+	SYSCALL(putc);
 	SYSCALL(process_create);
 	SYSCALL(thread_create);
 	SYSCALL(vmo_create);

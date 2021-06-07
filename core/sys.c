@@ -1,8 +1,8 @@
 
-#include <log.h>
+#include <types.h>
 
-long sys_putstring(const char *s)
+extern void print_char(u8_t c);
+void sys_putc(char c)
 {
-    LOGI($(s));
-    return 0;
+    print_char(c);
 }

@@ -11,7 +11,7 @@ long sys_ni_syscall(void)
 	return -1;
 }
 
-extern long sys_putstring(const char *s);
+extern void sys_putc(char c);
 extern void *sys_create();
 extern void sys_present();
 extern int sys_process_create();
@@ -19,7 +19,7 @@ extern int sys_thread_create();
 
 void *sys_call_table[__NR_syscalls] = {
 	[__NR_ni_syscall] = sys_ni_syscall,
-	[__NR_putstring] = sys_putstring,
+	[__NR_putc] = sys_putc,
 	[__NR_process_create] = sys_process_create,
 	[__NR_thread_create] = sys_thread_create,
 

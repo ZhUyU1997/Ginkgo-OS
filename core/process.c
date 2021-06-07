@@ -103,6 +103,41 @@ static u64_t load_binary(vmspace_t *vmspace, const char *file, virtual_addr_t ad
 	return addr;
 }
 
+vaddr_t prepare_env(char *top)
+{
+	{
+		char s[2][20] = {"/test", "test args"};
+		top -= sizeof(s);
+		memcpy(top, &s, sizeof(s));
+	}
+	char *s = top;
+
+	{
+		char *envp[1] = {NULL};
+		top -= sizeof(envp);
+		memcpy(top, &envp, sizeof(envp));
+	}
+	char *envp = top;
+
+	{
+		char *argv[2] = {s, s + 20};
+		top -= sizeof(argv);
+		memcpy(top, &argv, sizeof(argv));
+	}
+
+	char **argv = top;
+
+	top -= sizeof(u64_t);
+	*((u64_t *)top) = envp;
+
+	top -= sizeof(u64_t);
+	*((u64_t *)top) = argv;
+
+	top -= sizeof(u64_t);
+	*((u64_t *)top) = 1;
+	return top;
+}
+
 void launch_user_init(const char *filename)
 {
 	process_t *root = new (process_t);
@@ -116,7 +151,8 @@ void launch_user_init(const char *filename)
 	virtual_addr_t ustack = (virtual_addr_t)alloc_page(1);
 	map_range_in_pgtbl(vmspace->pgtbl, ustack, ustack, PGSIZE, PTE_R | PTE_W | PTE_U);
 
-	thread_t *thread = thread_create(root, ustack + PGSIZE, pc, NULL);
+	vaddr_t sp = prepare_env(ustack + PGSIZE);
+	thread_t *thread = thread_create(root, sp, pc, NULL);
 
 	struct pt_regs *regs = current->thread_info.kernel_sp - sizeof(struct pt_regs);
 

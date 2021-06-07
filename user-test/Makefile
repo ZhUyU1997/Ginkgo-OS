@@ -12,24 +12,17 @@ X_CFLAGS	= -std=gnu11 -O3 -g -ggdb \
 				-fno-pie
 
 X_INCDIRS	= $(src)/include
-X_LDFLAGS	= -z max-page-size=4096  -N -e main -Ttext 0x20000000 -no-pie -nostdlib
+X_LDFLAGS	= -z max-page-size=4096  -N -T $(src)/user.ld -no-pie -nostdlib
+X_LIBS		= user
+X_LIBDIRS	= $(src)/lib
 
-X_CLEAN		= $(obj)/*.asm $(obj)/*.sym
 
-NAME		:= test
-SRC			= test.c usys.c lib.c
+MODULE		= lib test
+
+test: lib
 
 X_PREPARE	:= $(src)/include/syscall_table.h
 
 $(src)/include/syscall_table.h: $(src)/../arch/include/syscall_table.h
 	@echo CP $@
 	@cp $< $@
-
-define CUSTOM_TARGET_CMD
-echo [OUTPUT] $@; \
-$(LD) $(X_LDFLAGS) -o $@.o $(X_OBJS); \
-$(OC) -O binary -S $@.o $@; \
-$(OD) -S $@.o > $(obj)/test.asm; \
-$(OD) -t $@.o | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > $@.o.sym; \
-cp $(obj)/test $(obj)/../rootfs
-endef
