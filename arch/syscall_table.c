@@ -1,37 +1,44 @@
 #include <syscall_table.h>
-#include <errno.h>
-#include <core/vmo.h>
-#include <core/syscall.h>
+#include <log.h>
 
-#undef __SYSCALL
-#define __SYSCALL(nr, call) [nr] = (call),
-
-long sys_ni_syscall(void)
+void sys_ni_syscall(void)
 {
-	return -1;
+	PANIC("invalid syscall");
+	return;
 }
 
-extern void sys_putc(char c);
-extern void *sys_create();
-extern void sys_present();
-extern int sys_process_create();
-extern int sys_thread_create();
+#define SYSCALL_DEC(x) extern void sys_##x()
+
+SYSCALL_DEC(ni_syscall);
+SYSCALL_DEC(putc);
+SYSCALL_DEC(process_create);
+SYSCALL_DEC(thread_create);
+SYSCALL_DEC(vmo_create);
+SYSCALL_DEC(vmo_write);
+SYSCALL_DEC(vmo_read);
+SYSCALL_DEC(vmo_map);
+SYSCALL_DEC(nanosleep);
+SYSCALL_DEC(clock_get);
+SYSCALL_DEC(clock_get_monotonic);
+SYSCALL_DEC(ticks_get);
+SYSCALL_DEC(ticks_per_second);
+SYSCALL_DEC(deadline_after);
+
+#define SYSCALL_ITEM(x) [__NR_##x] = sys_##x
 
 void *sys_call_table[__NR_syscalls] = {
-	[__NR_ni_syscall] = sys_ni_syscall,
-	[__NR_putc] = sys_putc,
-	[__NR_process_create] = sys_process_create,
-	[__NR_thread_create] = sys_thread_create,
-
-	[__NR_vmo_create] = sys_vmo_create,
-	[__NR_vmo_write] = sys_vmo_write,
-	[__NR_vmo_read] = sys_vmo_read,
-	[__NR_vmo_map] = sys_vmo_map,
-
-	[__NR_nanosleep] = sys_nanosleep,
-	[__NR_clock_get] = sys_clock_get,
-	[__NR_clock_get_monotonic] = sys_clock_get_monotonic,
-	[__NR_ticks_get] = sys_ticks_get,
-	[__NR_ticks_per_second] = sys_ticks_per_second,
-	[__NR_deadline_after] = sys_deadline_after,
+	SYSCALL_ITEM(ni_syscall),
+	SYSCALL_ITEM(putc),
+	SYSCALL_ITEM(process_create),
+	SYSCALL_ITEM(thread_create),
+	SYSCALL_ITEM(vmo_create),
+	SYSCALL_ITEM(vmo_write),
+	SYSCALL_ITEM(vmo_read),
+	SYSCALL_ITEM(vmo_map),
+	SYSCALL_ITEM(nanosleep),
+	SYSCALL_ITEM(clock_get),
+	SYSCALL_ITEM(clock_get_monotonic),
+	SYSCALL_ITEM(ticks_get),
+	SYSCALL_ITEM(ticks_per_second),
+	SYSCALL_ITEM(deadline_after),
 };

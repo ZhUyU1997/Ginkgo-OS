@@ -5,6 +5,7 @@
 void asm_offsets(void)
 {
 	int index = 0;
+	STRING("#pragma once");
 	SYSCALL(ni_syscall);
 	SYSCALL(putc);
 	SYSCALL(process_create);
