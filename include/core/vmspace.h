@@ -9,9 +9,11 @@
 #include <vm.h>
 
 typedef u64_t vmr_prop_t;
-#define VMR_READ (1 << 0)
-#define VMR_WRITE (1 << 1)
-#define VMR_EXEC (1 << 2)
+
+#define PROT_READ	0x1		/* Page can be read.  */
+#define PROT_WRITE	0x2		/* Page can be written.  */
+#define PROT_EXEC	0x4		/* Page can be executed.  */
+#define PROT_NONE	0x0		/* Page can not be accessed.  */
 
 struct vmregion
 {
@@ -33,5 +35,6 @@ class(vmspace_t, kobject_t)
 	vaddr_t user_current_heap;
 };
 
-bool_t vmspace_map_range(vmspace_t *vmspace, vaddr_t va, size_t len, vmr_prop_t flags, vmobject_t *vmo);
+bool_t vmspace_map_range_user(vmspace_t *vmspace, vaddr_t va, size_t len, u64_t prot, u64_t flags, vmobject_t *vmo);
+bool_t vmspace_map_range_kernel(vmspace_t *vmspace, vaddr_t va, size_t len, u64_t prot, u64_t flags, vmobject_t *vmo);
 bool_t vmspace_unmap_range(vmspace_t *vmspace, vaddr_t va, size_t len);

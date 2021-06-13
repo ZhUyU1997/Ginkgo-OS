@@ -121,7 +121,7 @@ static int fill_page_table(vmspace_t *vmspace, struct vmregion *vmr)
 	return ret;
 }
 
-bool_t vmspace_map_range(vmspace_t *vmspace, vaddr_t va, size_t len, vmr_prop_t flags, vmobject_t *vmo)
+bool_t arch_vmspace_map_range(vmspace_t *vmspace, vaddr_t va, size_t len, u64_t flags, vmobject_t *vmo)
 {
 	struct vmregion *vmr;
 	int ret;
@@ -154,6 +154,32 @@ out_free_vmr:
 	vmregion_free(vmr);
 out_fail:
 	return ret;
+}
+
+bool_t vmspace_map_range_user(vmspace_t *vmspace, vaddr_t va, size_t len, u64_t prot, u64_t flags, vmobject_t *vmo)
+{
+	u64_t arch_flags = 0;
+
+	if (prot | PROT_EXEC)
+		arch_flags |= PTE_X;
+	if (prot | PROT_WRITE)
+		arch_flags |= PTE_W;
+	if (prot | PROT_READ)
+		arch_flags |= PTE_R;
+	return arch_vmspace_map_range(vmspace, va, len, arch_flags | PTE_U, vmo);
+}
+
+bool_t vmspace_map_range_kernel(vmspace_t *vmspace, vaddr_t va, size_t len, u64_t prot, u64_t flags, vmobject_t *vmo)
+{
+	u64_t arch_flags = 0;
+
+	if (prot | PROT_EXEC)
+		arch_flags |= PTE_X;
+	if (prot | PROT_WRITE)
+		arch_flags |= PTE_W;
+	if (prot | PROT_READ)
+		arch_flags |= PTE_R;
+	return arch_vmspace_map_range(vmspace, va, len, arch_flags, vmo);
 }
 
 bool_t vmspace_unmap_range(vmspace_t *vmspace, vaddr_t va, size_t len)

@@ -117,7 +117,7 @@ int sys_vmo_read(u64_t slot, u64_t offset, u64_t user_ptr, u64_t len)
     return read_write_vmo(slot, offset, user_ptr, len, READ_PMO);
 }
 
-int sys_vmo_map(u64_t target_process_slot, u64_t slot, u64_t addr, u64_t perm)
+int sys_vmo_map(u64_t target_process_slot, u64_t slot, u64_t addr, u64_t prot, u64_t flags)
 {
     vmspace_t *vmspace;
     vmobject_t *vmo;
@@ -143,7 +143,7 @@ int sys_vmo_map(u64_t target_process_slot, u64_t slot, u64_t addr, u64_t perm)
 
     vmspace = dynamic_cast(vmspace_t)(slot_get(target_process, VMSPACE_OBJ_ID));
 
-    r = vmspace_map_range(vmspace, addr, vmo->size, perm, vmo);
+    r = vmspace_map_range_user(vmspace, addr, vmo->size, prot, flags, vmo);
     if (r != 0)
     {
         r = -1;

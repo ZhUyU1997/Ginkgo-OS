@@ -5,10 +5,7 @@
 #include <malloc.h>
 #include <list.h>
 #include <spinlock.h>
-
-LIST_HEAD(ready);
-
-spinlock_t sche_lock;
+#include <core/sched.h>>
 
 thread_t *current = NULL;
 
@@ -25,29 +22,6 @@ int nextpid = 1;
 
 extern pagetable_t kernel_pagetable;
 
-static inline struct thread_t *scheduler_next_ready_task()
-{
-    if (list_empty(&ready))
-    {
-        PANIC("empty thread list");
-    }
-
-    struct list_head *list = ready.next;
-    thread_t *thread = container_of(list, thread_t, ready_queue_node);
-
-    return thread;
-}
-
-static inline void scheduler_enqueue_task(thread_t *thread)
-{
-    list_add_tail(&thread->ready_queue_node, &ready);
-}
-
-static inline void scheduler_dequeue_task(thread_t *thread)
-{
-    list_del_init(&thread->ready_queue_node);
-}
-
 void task_mapstacks(thread_t *thread)
 {
     map_range_in_pgtbl(thread->vmspace->pgtbl, thread->kstack, thread->kstack, thread->sz, PTE_R | PTE_W);
@@ -55,7 +29,7 @@ void task_mapstacks(thread_t *thread)
 
 void do_task_init()
 {
-    spin_lock_init(&sche_lock);
+    do_sched_init();
 
     current = new (thread_t);
     current->vmspace = new (vmspace_t);
@@ -170,46 +144,5 @@ void thread_suspend(thread_t *thread)
             thread->status = TASK_STATUS_SUSPEND;
             schedule();
         }
-    }
-}
-
-static void switch_mm(thread_t *thread)
-{
-    pagetable_active(thread->vmspace->pgtbl);
-}
-
-void schedule()
-{
-    spin_lock(&sche_lock);
-
-    if (current->status == TASK_STATUS_SUSPEND || current->status == TASK_STATUS_EXIT)
-    {
-        init_list_head(&current->ready_queue_node);
-    }
-    else
-    {
-        scheduler_enqueue_task(current);
-    }
-
-    thread_t *thread = scheduler_next_ready_task();
-    scheduler_dequeue_task(thread);
-
-    thread_t *old = current;
-    current = thread;
-
-    current->status = TASK_STATUS_RUNNING;
-
-    spin_unlock(&sche_lock);
-
-    switch_mm(current);
-
-    if (old->status == TASK_STATUS_EXIT)
-    {
-        delete (old);
-        load_context(current);
-    }
-    else
-    {
-        switch_to(old, current);
     }
 }

@@ -135,7 +135,6 @@ static inline thread_t *task_self(void)
 	return current;
 }
 
-void switch_to(thread_t *, thread_t *);
 void load_context(thread_t *);
 void schedule();
 void do_task_init();
