@@ -16,7 +16,7 @@
 
 SYSFUNC_DEF(putc);
 SYSFUNC_DEF(process_create);
-
+SYSFUNC_DEF(process_exit);
 SYSFUNC_DEF(vmo_create);
 SYSFUNC_DEF(vmo_write);
 SYSFUNC_DEF(vmo_read);

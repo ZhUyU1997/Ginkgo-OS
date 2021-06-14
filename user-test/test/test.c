@@ -12,6 +12,10 @@ typedef enum
     VMO_DEVICE = 5,     /* memory mapped device registers */
 } vmo_type_t;
 
+#define VM_READ  (1 << 0)
+#define VM_WRITE (1 << 1)
+#define VM_EXEC  (1 << 2)
+
 void *memset(void *dst, int c, uint32 n)
 {
     char *cdst = (char *)dst;
@@ -23,6 +27,26 @@ void *memset(void *dst, int c, uint32 n)
     return dst;
 }
 
+void test_vmo()
+{
+    int slot = usys_vmo_create(1024, VMO_DATA);
+    char buf[1024] = "hello vmo\n";
+    usys_vmo_write(slot, 0, buf, 1024);
+    usys_vmo_read(slot, 0, buf, 1024);
+    printf(buf);
+}
+
+void test_vmo_map()
+{
+    int slot = usys_vmo_create(1024, VMO_DATA);
+    char buf[1024] = "hello vmo\n";
+    usys_vmo_write(slot, 0, buf, 1024);
+    usys_vmo_map(0, slot, 0x100000, VM_READ | VM_WRITE, 0);
+
+    u64_t *addr = 0x100000;
+    printf(addr);
+}
+
 int main(int argc, char **argv)
 {
     printf("%d\n",argc);
@@ -31,13 +55,8 @@ int main(int argc, char **argv)
     printf("%s\n",argv[1]);
 
     printf("main\n");
-    int slot = usys_vmo_create(1024, VMO_DATA);
-    char buf[1024] = "hello vmo\n";
-    usys_vmo_write(slot, 0, buf, 1024);
-    usys_vmo_read(slot, 0, buf, 1024);
-    printf(buf);
 
-    while (1)
-        ;
+    test_vmo();
+    test_vmo_map();
     return 0;
 }
