@@ -35,18 +35,16 @@ X_PREPARE	:= arch/include/asm-offsets.h arch/include/syscall_table.h
 
 MODULE		+= user-test
 
-arch/include/asm-offsets.h: arch/asm-offsets.c
-	@echo Gen $@
-	@$(CC) $(X_CFLAGS) $(X_CPPFLAGS) -S -o $<.s $<
-	@echo "#pragma once" > $@
-	@cat $<.s | sed -n '/define/s/\.ascii\ \"\([^"]*\)\"/\1/p' >> $@
+arch/include/asm-offsets.h: arch/asm-offsets.gen
+	@echo GEN $@
+	@$(CC) -xc $(X_CFLAGS) $(X_CPPFLAGS) -S -o $<.s $<
+	@cat $<.s | sed -n '/^.ascii/s/\.ascii\ \"\([^"]*\)\"/\1/p' >> $@
 	@rm $<.s
 
-arch/include/syscall_table.h: arch/syscall_def.c
-	@echo Gen $@
-	@$(CC) $(X_CFLAGS) $(X_CPPFLAGS) -S -o $<.s $<
-	@echo "#pragma once" > $@
-	@cat $<.s | sed -n '/define/s/\.ascii\ \"\([^"]*\)\"/\1/p' >> $@
+arch/include/syscall_table.h: arch/syscall_def.gen
+	@echo GEN $@
+	@$(CC) -xc $(X_CFLAGS) $(X_CPPFLAGS) -S -o $<.s $<
+	@cat $<.s | sed -n '/^.ascii/s/\.ascii\ \"\([^"]*\)\"/\1/p' > $@
 	@rm $<.s
 
 define CUSTOM_TARGET_CMD
