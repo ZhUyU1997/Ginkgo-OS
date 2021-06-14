@@ -41,11 +41,9 @@ arch/include/asm-offsets.h: arch/asm-offsets.gen
 	@cat $<.s | sed -n '/^.ascii/s/\.ascii\ \"\([^"]*\)\"/\1/p' >> $@
 	@rm $<.s
 
-arch/include/syscall_table.h: arch/syscall_def.gen
+arch/include/syscall_table.h: arch/syscall_gen.py
 	@echo GEN $@
-	@$(CC) -xc $(X_CFLAGS) $(X_CPPFLAGS) -S -o $<.s $<
-	@cat $<.s | sed -n '/^.ascii/s/\.ascii\ \"\([^"]*\)\"/\1/p' > $@
-	@rm $<.s
+	@arch/syscall_gen.py > $@
 
 define CUSTOM_TARGET_CMD
 echo [KERNEL] $@; \
