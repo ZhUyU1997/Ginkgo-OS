@@ -71,7 +71,7 @@ static inline raw_spinlock_t *spinlock_check(spinlock_t *lock)
 	return (raw_spinlock_t *)&lock->rlock;
 }
 
-#define SPIN_LOCK_INIT()	{ 0 }
+#define SPIN_LOCK_INIT()	{  }
 
 #define spin_lock_init(_lock)                      \
 	do                                             \

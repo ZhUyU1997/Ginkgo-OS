@@ -205,7 +205,7 @@ void virtio_mmio_interrupt_ack(struct virtio_mmio_desc_t *desc)
 void *virtio_mmio_get_config(struct virtio_mmio_desc_t *desc)
 {
     addr_t addr = desc->addr;
-    return addr + VIRTIO_MMIO_CONFIG;
+    return (void *)(addr + VIRTIO_MMIO_CONFIG);
 }
 
 struct virtio_mmio_desc_t *virtio_mmio_search_device(uint32 _device_id, int virtio_mmio_bus)

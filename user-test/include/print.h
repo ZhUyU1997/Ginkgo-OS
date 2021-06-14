@@ -1,3 +1,3 @@
 #pragma once
 
-void printf(char *fmt, ...);
+void printf(const char *fmt, ...);

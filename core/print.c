@@ -3,7 +3,7 @@
 
 #include <stddef.h>
 
-volatile virtual_addr_t virt = 0x10000000;
+volatile vaddr_t virt = 0x10000000;
 
 void print_char(u8_t c)
 {

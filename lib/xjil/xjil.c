@@ -248,7 +248,7 @@ token_type_t next(context_t *ctx)
             string_clear(ctx->str);
             string_push(ctx->str, c);
 
-            while (c = *++src)
+            while ((c = *++src))
             {
                 if (!isalnum(c) && (c != '_') && (c != '-'))
                     break;
@@ -276,7 +276,7 @@ token_type_t next(context_t *ctx)
             u64_t token_val = c - '0';
             if (token_val > 0)
             {
-                while (c = *++src)
+                while ((c = *++src))
                 {
                     if (!isalnum(c))
                         break;
@@ -290,7 +290,7 @@ token_type_t next(context_t *ctx)
                 if (c == 'x' || c == 'X')
                 {
                     int count = 0;
-                    while (c = *++src)
+                    while ((c = *++src))
                     {
                         if (!(isalnum(c) || ((c >= 'A') && (c <= 'F')) | ((c >= 'a') && (c <= 'f'))))
                             break;
@@ -311,7 +311,7 @@ token_type_t next(context_t *ctx)
         else if (c == '"')
         {
             string_clear(ctx->str);
-            while (c = *++src)
+            while ((c = *++src))
             {
 
                 if ((c == '\0') || (c == '"'))
@@ -372,7 +372,7 @@ token_type_t next(context_t *ctx)
 
             if (c == '/')
             {
-                while (c = *++src)
+                while ((c = *++src))
                 {
                     if (c == '\n')
                         break;
@@ -392,7 +392,6 @@ token_type_t next(context_t *ctx)
         ++src;
     }
 
-exit:
     ctx->pos = src - ctx->src;
     return type;
 }

@@ -9,7 +9,7 @@ struct surface_t *surface_create(int width, int height, int pixlen)
     void *pixels = malloc(width * height * pixlen);
     surface->width = width;
     surface->height = height;
-    surface->pixlen = pixels;
+    surface->pixlen = pixlen;
     surface->stride = width * pixlen;
     surface->pixels = pixels;
     return surface;

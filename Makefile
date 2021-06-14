@@ -5,7 +5,7 @@ sinclude scripts/env.mk
 CROSS_COMPILE	:= riscv64-linux-gnu-
 export CROSS_COMPILE
 
-W_FLAGS		= -Wall -Werror=implicit-function-declaration -Wno-unused-function -Werror=return-type
+W_FLAGS		= -Wall -Werror=implicit-function-declaration -Wno-unused-function -Werror=return-type -Wno-unused-but-set-variable -Wno-unused-variable
 X_CFLAGS	+= -std=gnu11 -O3 -g -ggdb \
 				$(W_FLAGS) \
 				-march=rv64g -mabi=lp64d -mcmodel=medany \

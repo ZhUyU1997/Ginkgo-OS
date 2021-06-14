@@ -12,7 +12,7 @@
 
 class(clint_clocksource_t, clocksource_t)
 {
-    virtual_addr_t virt;
+    vaddr_t virt;
     int cpu;
 };
 
@@ -28,7 +28,7 @@ static int cs_clint_timer_probe(device_t *this, xjil_value_t *value)
 {
     clint_clocksource_t *ccs = dynamic_cast(clint_clocksource_t)(this);
     clocksource_t *cs = dynamic_cast(clocksource_t)(this);
-    virtual_addr_t virt = xjil_read_u64(value, "addr", -1);
+    vaddr_t virt = xjil_read_u64(value, "addr", -1);
     u64_t rate = xjil_read_u64(value, "rate", -1);
 
     ccs->virt = virt;

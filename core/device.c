@@ -38,7 +38,7 @@ void do_init_device()
     register_device(class_type(device_t));
 
     xjil_value_t *v = xjil_new();
-    xjil_parse(v, &__dtree_start, &__dtree_end - &__dtree_start);
+    xjil_parse(v, (const char *)&__dtree_start, &__dtree_end - &__dtree_start);
 
     if (xjil_is_array(v))
     {

@@ -31,8 +31,8 @@ void test_vmo()
 {
     int slot = usys_vmo_create(1024, VMO_DATA);
     char buf[1024] = "hello vmo\n";
-    usys_vmo_write(slot, 0, buf, 1024);
-    usys_vmo_read(slot, 0, buf, 1024);
+    usys_vmo_write(slot, 0, (u64_t)buf, 1024);
+    usys_vmo_read(slot, 0, (u64_t)buf, 1024);
     printf(buf);
 }
 
@@ -40,11 +40,11 @@ void test_vmo_map()
 {
     int slot = usys_vmo_create(1024, VMO_DATA);
     char buf[1024] = "hello vmo\n";
-    usys_vmo_write(slot, 0, buf, 1024);
-    usys_vmo_map(0, slot, 0x100000, VM_READ | VM_WRITE, 0);
+    usys_vmo_write(slot, 0, (u64_t)buf, 1024);
+    usys_vmo_map(0, slot, (u64_t)0x100000, VM_READ | VM_WRITE, 0);
 
-    u64_t *addr = 0x100000;
-    printf(addr);
+    u64_t *addr = (u64_t *)0x100000;
+    printf((const char *)addr);
 }
 
 int main(int argc, char **argv)

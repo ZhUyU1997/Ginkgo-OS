@@ -118,7 +118,7 @@ class(thread_t, kobject_t)
 	vmspace_t *vmspace;
 
 	enum task_status_t status;
-	virtual_addr_t kstack;
+	vaddr_t kstack;
 	size_t sz;
 	struct context context;
 	const char *name;
@@ -134,7 +134,7 @@ void load_context(thread_t *);
 void schedule();
 void do_task_init();
 void launch_user_init(const char *filename);
-thread_t *thread_create(process_t *process, u64_t stack, u64_t pc, u64_t arg);
+thread_t *thread_create(process_t *process, void *stack, void *pc, void *arg);
 void thread_resume(thread_t *);
 void thread_suspend(thread_t *);
 void thread_destroy(thread_t *);
@@ -142,6 +142,11 @@ void thread_exit(thread_t *);
 
 int slot_alloc(process_t *process);
 kobject_t *slot_get(process_t *process, int slot);
-void slot_install(process_t *process, int slot_id, kobject_t *obj);
-int slot_alloc_install(process_t *process, kobject_t *obj);
+
+void _slot_install(process_t *process, int slot_id, kobject_t *obj);
+int _slot_alloc_install(process_t *process, kobject_t *obj);
+
+#define slot_install(_1, _2, _3) _slot_install(_1, _2, dynamic_cast(kobject_t)(_3));
+#define slot_alloc_install(_1, _2) _slot_alloc_install(_1, dynamic_cast(kobject_t)(_2));
+
 int slot_copy(process_t *src, process_t *dest, int slot);

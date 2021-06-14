@@ -30,7 +30,6 @@ typedef uint64 uint64_t;
 
 typedef uint64 pde_t;
 typedef sint64 loff_t;
-typedef uint64 virtual_addr_t;
 typedef uint64 vaddr_t;
 typedef uint64 paddr_t;
 typedef uint64 addr_t;

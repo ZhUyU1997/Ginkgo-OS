@@ -36,15 +36,14 @@ kobject_t *slot_get(process_t *process, int slot)
 	return NULL;
 }
 
-void slot_install(process_t *process, int slot_id,
-				  kobject_t *obj)
+void _slot_install(process_t *process, int slot_id, kobject_t *obj)
 {
 	assert(process && obj);
 
 	process->slot_table.slots[slot_id] = obj;
 }
 
-int slot_alloc_install(process_t *process, kobject_t *obj)
+int _slot_alloc_install(process_t *process, kobject_t *obj)
 {
 	assert(process && obj);
 
@@ -54,7 +53,7 @@ int slot_alloc_install(process_t *process, kobject_t *obj)
 	{
 		return -1;
 	}
-	slot_install(process, slot, dynamic_cast(kobject_t)(obj));
+	slot_install(process, slot, obj);
 	return slot;
 }
 
@@ -70,9 +69,9 @@ int sys_process_create(void)
 	process_t *new_process = new (process_t);
 	vmspace_t *vmspace = new (vmspace_t);
 
-	int slot = slot_alloc_install(process_self(), dynamic_cast(kobject_t)(new_process));
-	slot_alloc_install(new_process, dynamic_cast(kobject_t)(new_process));
-	slot_alloc_install(new_process, dynamic_cast(kobject_t)(vmspace));
+	int slot = slot_alloc_install(process_self(), new_process);
+	slot_alloc_install(new_process, new_process);
+	slot_alloc_install(new_process, vmspace);
 
 	return slot;
 }
@@ -94,7 +93,7 @@ constructor(process_t)
 	this->slot_table.slots = malloc(MAX_SLOTS_SIZE * sizeof(kobject_t *));
 }
 
-static u64_t load_binary(vmspace_t *vmspace, const char *file, virtual_addr_t addr)
+static paddr_t load_binary(vmspace_t *vmspace, const char *file, vaddr_t addr)
 {
 	vfs_mount("virtio-block", "/", "cpio", MOUNT_RO);
 	int fd = vfs_open(file, O_RDONLY, 0);
@@ -107,39 +106,39 @@ static u64_t load_binary(vmspace_t *vmspace, const char *file, virtual_addr_t ad
 
 	vfs_read(fd, buf, st.st_size);
 
-	map_range_in_pgtbl(vmspace->pgtbl, addr, buf, st.st_size, PTE_R | PTE_W | PTE_X | PTE_U);
-	return addr;
+	map_range_in_pgtbl(vmspace->pgtbl, addr, (paddr_t)buf, st.st_size, PTE_R | PTE_W | PTE_X | PTE_U);
+	return (paddr_t)addr;
 }
 
-vaddr_t prepare_env(char *top)
+vaddr_t prepare_env(vaddr_t top)
 {
 	{
 		char s[2][20] = {"/test", "test args"};
 		top -= sizeof(s);
-		memcpy(top, &s, sizeof(s));
+		memcpy((void *)top, &s, sizeof(s));
 	}
-	char *s = top;
+	char *s = (char *)top;
 
 	{
 		char *envp[1] = {NULL};
 		top -= sizeof(envp);
-		memcpy(top, &envp, sizeof(envp));
+		memcpy((void *)top, &envp, sizeof(envp));
 	}
-	char *envp = top;
+	char *envp = (char *)top;
 
 	{
 		char *argv[2] = {s, s + 20};
 		top -= sizeof(argv);
-		memcpy(top, &argv, sizeof(argv));
+		memcpy((void *)top, &argv, sizeof(argv));
 	}
 
-	char **argv = top;
+	char **argv = (char **)top;
 
 	top -= sizeof(u64_t);
-	*((u64_t *)top) = envp;
+	*((u64_t *)top) = (u64_t)envp;
 
 	top -= sizeof(u64_t);
-	*((u64_t *)top) = argv;
+	*((u64_t *)top) = (u64_t)argv;
 
 	top -= sizeof(u64_t);
 	*((u64_t *)top) = 1;
@@ -152,18 +151,18 @@ void launch_user_init(const char *filename)
 	vmspace_t *vmspace = new (vmspace_t);
 	thread_t *current = thread_self();
 
-	slot_alloc_install(root, dynamic_cast(kobject_t)(root));
-	slot_alloc_install(root, dynamic_cast(kobject_t)(vmspace));
+	slot_alloc_install(root, root);
+	slot_alloc_install(root, vmspace);
 
-	u64_t pc = load_binary(vmspace, filename, 0x20000000UL);
+	paddr_t pc = load_binary(vmspace, filename, 0x20000000UL);
 
-	virtual_addr_t ustack = (virtual_addr_t)alloc_page(1);
+	vaddr_t ustack = (vaddr_t)alloc_page(1);
 	map_range_in_pgtbl(vmspace->pgtbl, ustack, ustack, PGSIZE, PTE_R | PTE_W | PTE_U);
 
 	vaddr_t sp = prepare_env(ustack + PGSIZE);
-	thread_t *thread = thread_create(root, sp, pc, NULL);
+	thread_t *thread = thread_create(root, (void *)sp, (void *)pc, NULL);
 
-	struct pt_regs *regs = current->thread_info.kernel_sp - sizeof(struct pt_regs);
+	struct pt_regs *regs = (struct pt_regs *)(current->thread_info.kernel_sp - sizeof(struct pt_regs));
 
 	thread_resume(thread);
 }
