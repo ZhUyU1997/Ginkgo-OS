@@ -24,7 +24,7 @@ void semaphore_down(struct semaphore_t *m)
 			break;
 		}
 
-		self = task_self();
+		self = thread_self();
 		if (list_empty_careful(&self->mlist))
 			list_add_tail(&self->mlist, &m->mwait);
 		spin_unlock(&m->lock);

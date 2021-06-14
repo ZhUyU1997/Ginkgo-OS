@@ -70,11 +70,19 @@ int sys_process_create(void)
 	process_t *new_process = new (process_t);
 	vmspace_t *vmspace = new (vmspace_t);
 
-	int slot = slot_alloc_install(current_process, dynamic_cast(kobject_t)(new_process));
+	int slot = slot_alloc_install(process_self(), dynamic_cast(kobject_t)(new_process));
 	slot_alloc_install(new_process, dynamic_cast(kobject_t)(new_process));
 	slot_alloc_install(new_process, dynamic_cast(kobject_t)(vmspace));
 
 	return slot;
+}
+
+void sys_process_exit(s64_t retcode)
+{
+	// send dying signal to all threads in this process
+
+	// exit this thread.
+	thread_exit(thread_self());
 }
 
 class_impl(process_t, kobject_t){};
@@ -142,6 +150,7 @@ void launch_user_init(const char *filename)
 {
 	process_t *root = new (process_t);
 	vmspace_t *vmspace = new (vmspace_t);
+	thread_t *current = thread_self();
 
 	slot_alloc_install(root, dynamic_cast(kobject_t)(root));
 	slot_alloc_install(root, dynamic_cast(kobject_t)(vmspace));

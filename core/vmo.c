@@ -54,7 +54,7 @@ int sys_vmo_create(u64_t size, u64_t type)
         goto out_fail;
     vmo_init(vmo, type, size, 0);
 
-    int slot = slot_alloc_install(current_process, vmo);
+    int slot = slot_alloc_install(process_self(), vmo);
     if (slot == -1)
         goto out_free_obj;
     return slot;
@@ -73,7 +73,7 @@ static int read_write_vmo(u64_t slot, u64_t offset, u64_t user_buf,
     int r = 0;
 
     /* caller should have the slot */
-    vmo = dynamic_cast(vmobject_t)(slot_get(current_process, slot));
+    vmo = dynamic_cast(vmobject_t)(slot_get(process_self(), slot));
     if (!vmo)
     {
         r = -1;
@@ -124,16 +124,16 @@ int sys_vmo_map(u64_t target_process_slot, u64_t slot, u64_t addr, u64_t prot, u
     process_t *target_process;
     int r;
 
-    vmo = dynamic_cast(vmobject_t)(slot_get(current_process, slot));
+    vmo = dynamic_cast(vmobject_t)(slot_get(process_self(), slot));
     if (!vmo)
     {
         r = -1;
         goto out_fail;
     }
-    target_process = dynamic_cast(process_t)(slot_get(current_process, target_process_slot));
+    target_process = dynamic_cast(process_t)(slot_get(process_self(), target_process_slot));
 
     /* map the vmo to the target process */
-    target_process = dynamic_cast(process_t)(slot_get(current_process, target_process_slot));
+    target_process = dynamic_cast(process_t)(slot_get(process_self(), target_process_slot));
 
     if (!target_process)
     {
@@ -154,9 +154,9 @@ int sys_vmo_map(u64_t target_process_slot, u64_t slot, u64_t addr, u64_t prot, u
 	 * when a process maps a vmo to others,
 	 * this func returns the new_cap in the target process.
 	 */
-    if (target_process != current_process)
+    if (target_process != process_self())
         /* if using cap_move, we need to consider remove the mappings */
-        r = slot_copy(current_process, target_process, slot);
+        r = slot_copy(process_self(), target_process, slot);
     else
         r = 0;
 

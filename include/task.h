@@ -126,15 +126,10 @@ class(thread_t, kobject_t)
 
 typedef void (*task_func_t)();
 
-extern thread_t *current;
+#define process_self() (thread_self()->process)
 
-#define current_process (current->process)
-
-static inline thread_t *task_self(void)
-{
-	return current;
-}
-
+thread_t *thread_self(void);
+thread_t *thread_self_set(thread_t *thread);
 void load_context(thread_t *);
 void schedule();
 void do_task_init();
@@ -143,6 +138,7 @@ thread_t *thread_create(process_t *process, u64_t stack, u64_t pc, u64_t arg);
 void thread_resume(thread_t *);
 void thread_suspend(thread_t *);
 void thread_destroy(thread_t *);
+void thread_exit(thread_t *);
 
 int slot_alloc(process_t *process);
 kobject_t *slot_get(process_t *process, int slot);

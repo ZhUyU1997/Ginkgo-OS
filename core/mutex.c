@@ -14,7 +14,7 @@ void mutex_lock(struct mutex_t *m)
 
 	while (atomic_cmpxchg(&m->atomic, 1, 0) != 1)
 	{
-		self = task_self();
+		self = thread_self();
 		spin_lock(&m->lock);
 		if (list_empty_careful(&self->mlist))
 			list_add_tail(&self->mlist, &m->mwait);

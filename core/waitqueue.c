@@ -13,7 +13,7 @@ void init_waitqueue_head(struct wait_queue_head *wq_head)
 
 void init_wait_entry(struct wait_queue_entry *wq_entry)
 {
-	wq_entry->priv = current;
+	wq_entry->priv = thread_self();
 	wq_entry->func = autoremove_wake_function;
 	init_list_head(&wq_entry->entry);
 }

@@ -7,8 +7,6 @@
 #include <spinlock.h>
 #include <core/sched.h>>
 
-thread_t *current = NULL;
-
 class_impl(thread_t){};
 
 constructor(thread_t)
@@ -27,20 +25,10 @@ void task_mapstacks(thread_t *thread)
     map_range_in_pgtbl(thread->vmspace->pgtbl, thread->kstack, thread->kstack, thread->sz, PTE_R | PTE_W);
 }
 
-void do_task_init()
-{
-    do_sched_init();
-
-    current = new (thread_t);
-    current->vmspace = new (vmspace_t);
-    current->name = "idle";
-    current->status = TASK_STATUS_RUNNING;
-
-    asm volatile("mv tp, %0" ::"r"(current));
-}
-
 static void task_helper()
 {
+    thread_t *current = thread_self();
+
     task_func_t func = (task_func_t)current->context.s0;
     func();
     thread_destroy(current);
@@ -101,10 +89,23 @@ thread_t *thread_create(process_t *process, u64_t stack, u64_t pc, u64_t arg)
 
 int sys_thread_create(u64_t process_slot, u64_t stack, u64_t pc, u64_t arg)
 {
-    process_t *process = dynamic_cast(process_t)(slot_get(current_process, process_slot));
+    process_t *process = dynamic_cast(process_t)(slot_get(process_self(), process_slot));
     thread_t *thread = thread_create(process, stack, pc, arg);
-    int slot = slot_alloc_install(current_process, thread);
+    int slot = slot_alloc_install(process_self(), thread);
     return slot;
+}
+
+void sys_thread_exit()
+{
+    thread_t *thread = thread_self();
+
+    if (thread)
+        thread_destroy(thread);
+}
+
+void thread_exit(thread_t *thread)
+{
+    thread_destroy(thread);
 }
 
 void thread_destroy(thread_t *thread)
@@ -145,4 +146,30 @@ void thread_suspend(thread_t *thread)
             schedule();
         }
     }
+}
+
+// should be kept at the end of the file to let the compiler check for incorrect usage
+static thread_t *current = NULL;
+
+thread_t *thread_self()
+{
+    return current;
+}
+
+thread_t *thread_self_set(thread_t *thread)
+{
+    return current = thread;
+}
+
+void do_task_init()
+{
+    do_sched_init();
+
+    thread_t *current = new (thread_t);
+    current->vmspace = new (vmspace_t);
+    current->name = "idle";
+    current->status = TASK_STATUS_RUNNING;
+    thread_self_set(current);
+
+    asm volatile("mv tp, %0" ::"r"(current));
 }

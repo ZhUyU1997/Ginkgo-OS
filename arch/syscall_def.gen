@@ -10,6 +10,7 @@ void asm_offsets(void)
 	SYSCALL(putc);
 	SYSCALL(process_create);
 	SYSCALL(thread_create);
+	SYSCALL(thread_exit);
 	SYSCALL(vmo_create);
 	SYSCALL(vmo_write);
 	SYSCALL(vmo_read);

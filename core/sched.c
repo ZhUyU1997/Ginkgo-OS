@@ -38,6 +38,8 @@ void schedule()
 {
     spin_lock(&sche_lock);
 
+    thread_t *current = thread_self();
+
     if (current->status == TASK_STATUS_SUSPEND || current->status == TASK_STATUS_EXIT)
     {
         init_list_head(&current->ready_queue_node);
@@ -51,7 +53,8 @@ void schedule()
     scheduler_dequeue_task(thread);
 
     thread_t *old = current;
-    current = thread;
+
+    current = thread_self_set(thread);
 
     current->status = TASK_STATUS_RUNNING;
 
