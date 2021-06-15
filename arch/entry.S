@@ -6,12 +6,6 @@
 .align 4
 .globl handle_exception
 handle_exception:    
-        # sscratch points to where the process's p->trapframe is
-        # mapped into user space, at TRAPFRAME.
-        #
-        
-	# swap a0 and sscratch
-        # so that a0 is TRAPFRAME
 	csrrw tp, CSR_SSCRATCH, tp
 	bnez tp, _save_context
 
@@ -107,8 +101,18 @@ ret_from_syscall:
 	/* Set user a0 to kernel a0 */
 	REG_S a0, PT_A0(sp)
 
+.set resume_kernel, restore_all
+
 .globl ret_from_exception
 ret_from_exception:
+	REG_L s0, PT_SSTATUS(sp)
+	csrc CSR_SSTATUS, SR_SIE
+	andi s0, s0, SR_SPP
+	bnez s0, resume_kernel
+
+resume_userspace:
+	call work_pending
+
 	/* Save unwound kernel stack pointer in thread_info */
 	addi s0, sp, PT_SIZE_ON_STACK
 	REG_S s0, TASK_TI_KERNEL_SP(tp)
@@ -119,6 +123,7 @@ ret_from_exception:
 	 */
 	csrw CSR_SSCRATCH, tp
 
+restore_all:
 	REG_L a0, PT_SSTATUS(sp)
 	REG_L  a2, PT_SEPC(sp)
 	REG_SC x0, a2, PT_SEPC(sp)
@@ -159,6 +164,16 @@ ret_from_exception:
 
 	REG_L x2,  PT_SP(sp)
     sret
+
+work_pending:
+	/* Interrupts must be disabled here so flags are checked atomically */
+	REG_L s0, TASK_TI_FLAGS(tp) /* current_thread_info->flags */
+	andi s1, s0, TIF_NEED_RESCHED
+	bnez s1, work_resched
+	ret
+work_resched:
+	la ra, ret_from_exception
+	call schedule
 
 .globl timer_vector
 .align 4

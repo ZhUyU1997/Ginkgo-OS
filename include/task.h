@@ -6,6 +6,7 @@
 #include <list.h>
 #include <core/kobject.h>
 #include <core/vmspace.h>
+#include <thread_info.h>
 
 struct pt_regs
 {
@@ -45,20 +46,6 @@ struct pt_regs
 	unsigned long sbadaddr;
 	unsigned long scause;
 	unsigned long orig_a0; /* a0 value before the syscall */
-};
-
-struct thread_info
-{
-	unsigned long flags; /* low level flags */
-	int preempt_count;	 /* 0=>preemptible, <0=>BUG */
-	/*
-	 * These stack pointers are overwritten on every system call or
-	 * exception.  SP is also saved to the stack it can be recovered when
-	 * overwritten.
-	 */
-	long kernel_sp; /* Kernel stack pointer */
-	long user_sp;	/* User stack pointer */
-	int cpu;
 };
 
 // Saved registers for kernel context switches.
@@ -139,6 +126,7 @@ void thread_resume(thread_t *);
 void thread_suspend(thread_t *);
 void thread_destroy(thread_t *);
 void thread_exit(thread_t *);
+void thread_need_sched(thread_t *);
 
 int slot_alloc(process_t *process);
 kobject_t *slot_get(process_t *process, int slot);
@@ -146,7 +134,7 @@ kobject_t *slot_get(process_t *process, int slot);
 void _slot_install(process_t *process, int slot_id, kobject_t *obj);
 int _slot_alloc_install(process_t *process, kobject_t *obj);
 
-#define slot_install(_1, _2, _3) _slot_install(_1, _2, dynamic_cast(kobject_t)(_3));
-#define slot_alloc_install(_1, _2) _slot_alloc_install(_1, dynamic_cast(kobject_t)(_2));
+#define slot_install(_1, _2, _3) _slot_install(_1, _2, dynamic_cast(kobject_t)(_3))
+#define slot_alloc_install(_1, _2) _slot_alloc_install(_1, dynamic_cast(kobject_t)(_2))
 
 int slot_copy(process_t *src, process_t *dest, int slot);

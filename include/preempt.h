@@ -1,6 +1,7 @@
 #pragma once
 
 #include <compiler.h>
+#include <thread_info.h>
 
 #if 1
 // extern void add_preempt_count(int val);
@@ -18,8 +19,16 @@
 #define inc_preempt_count() add_preempt_count(1)
 #define dec_preempt_count() sub_preempt_count(1)
 
-static void add_preempt_count(int val){}
-static void sub_preempt_count(int val){}
+extern struct thread_t *thread_self();
+
+static void add_preempt_count(int val)
+{
+	((struct thread_info *)thread_self())->preempt_count += val;
+}
+static void sub_preempt_count(int val)
+{
+	((struct thread_info *)thread_self())->preempt_count -= val;
+}
 
 //TODO:完善
 //#ifdef CONFIG_PREEMPT_COUNT

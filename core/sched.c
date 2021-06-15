@@ -2,9 +2,10 @@
 #include <spinlock.h>
 #include <log.h>
 #include <core/sched.h>
+#include <core/timer.h>
 
 LIST_HEAD(ready);
-spinlock_t sche_lock;
+static spinlock_t sched_lock;
 
 static inline struct thread_t *scheduler_next_ready_task()
 {
@@ -36,7 +37,7 @@ void scheduler_dequeue_task(thread_t *thread)
 
 void schedule()
 {
-    spin_lock(&sche_lock);
+    spin_lock(&sched_lock);
 
     thread_t *current = thread_self();
 
@@ -58,7 +59,7 @@ void schedule()
 
     current->status = TASK_STATUS_RUNNING;
 
-    spin_unlock(&sche_lock);
+    spin_unlock(&sched_lock);
 
     switch_mm(current);
 
@@ -73,7 +74,18 @@ void schedule()
     }
 }
 
+static int sched_timer_function(struct timer_t *timer, void *data)
+{
+    LOGI();
+    thread_need_sched(thread_self());
+	timer_forward_now(timer, ms_to_ktime(1000));
+    return 1;
+}
+
 void do_sched_init()
 {
-    spin_lock_init(&sche_lock);
+    spin_lock_init(&sched_lock);
+    timer_t *timer = new (timer_t);
+    timer_init(timer, sched_timer_function, NULL);
+    timer_start_now(timer, ms_to_ktime(1000));
 }

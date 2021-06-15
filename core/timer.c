@@ -4,6 +4,10 @@
 #include <spinlock.h>
 #include <string.h>
 
+class_impl(timer_t, kobject_t)
+{
+};
+
 static struct timer_base_t __timer_base = {
 	.head = { NULL },
 	.next = NULL,

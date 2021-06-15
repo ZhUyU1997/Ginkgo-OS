@@ -1,23 +1,17 @@
-#include <types.h>
-#include <riscv.h>
-#include <memlayout.h>
-#include <kalloc.h>
-#include <vm.h>
-#include <task.h>
-#include <log.h>
-#include <trap.h>
 #include <core/class.h>
-#include <plic.h>
-#include <uart.h>
-#include <malloc.h>
 #include <core/device.h>
-#include <hmap.h>
-#include <vfs/vfs.h>
-#include <ctype.h>
-#include <csr.h>
 #include <core/syscall.h>
 #include <core/test.h>
 #include <core/timer.h>
+#include <core/sched.h>
+
+#include <vm.h>
+#include <task.h>
+#include <kalloc.h>
+#include <trap.h>
+#include <vfs/vfs.h>
+#include <log.h>
+#include <types.h>
 
 void main()
 {
@@ -35,9 +29,12 @@ void main()
 #ifdef UNIT_TEST
     thread_resume(kthread_create(do_all_test, NULL));
 #endif
+    do_sched_init();
 
     launch_user_init("/test");
     local_irq_enable();
+
+    // Not support kernel preemption, must be scheduled manually
     while (1)
         schedule();
 }

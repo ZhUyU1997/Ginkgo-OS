@@ -16,6 +16,10 @@ constructor(thread_t)
     init_list_head(&this->node);
 }
 
+destructor(thread_t)
+{
+}
+
 int nextpid = 1;
 
 extern pagetable_t kernel_pagetable;
@@ -148,6 +152,11 @@ void thread_suspend(thread_t *thread)
     }
 }
 
+void thread_need_sched(thread_t *thread)
+{
+    thread->thread_info.flags |= NEED_RESCHED;
+}
+
 // should be kept at the end of the file to let the compiler check for incorrect usage
 static thread_t *current = NULL;
 
@@ -163,8 +172,6 @@ thread_t *thread_self_set(thread_t *thread)
 
 void do_task_init()
 {
-    do_sched_init();
-
     thread_t *current = new (thread_t);
     current->vmspace = new (vmspace_t);
     current->name = "idle";

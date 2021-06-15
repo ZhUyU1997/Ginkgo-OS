@@ -77,7 +77,7 @@ pte_t *walk(pagetable_t pagetable, uint64 va, int alloc)
             if (alloc)
             {
                 pagetable = (pde_t *)alloc_page(1);
-                LOGI("create sub pagetable");
+                // LOGI("create sub pagetable");
                 if (pagetable == 0)
                 {
                     return 0;
