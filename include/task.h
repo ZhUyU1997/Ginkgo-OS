@@ -117,10 +117,6 @@ typedef void (*task_func_t)();
 
 thread_t *thread_self(void);
 thread_t *thread_self_set(thread_t *thread);
-void load_context(thread_t *);
-void schedule();
-void do_task_init();
-void launch_user_init(const char *filename);
 thread_t *thread_create(process_t *process, void *stack, void *pc, void *arg);
 void thread_resume(thread_t *);
 void thread_suspend(thread_t *);
@@ -138,3 +134,6 @@ int _slot_alloc_install(process_t *process, kobject_t *obj);
 #define slot_alloc_install(_1, _2) _slot_alloc_install(_1, dynamic_cast(kobject_t)(_2))
 
 int slot_copy(process_t *src, process_t *dest, int slot);
+
+void do_task_init();
+void do_user_init();

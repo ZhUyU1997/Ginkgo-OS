@@ -97,6 +97,10 @@ static paddr_t load_binary(vmspace_t *vmspace, const char *file, vaddr_t addr)
 {
 	vfs_mount("virtio-block", "/", "cpio", MOUNT_RO);
 	int fd = vfs_open(file, O_RDONLY, 0);
+
+	if (fd < 0)
+		return 0;
+
 	struct vfs_stat_t st;
 	vfs_fstat(fd, &st);
 	int page_num = (st.st_size + PAGE_SIZE - 1) >> PAGE_SHIFT;
@@ -145,24 +149,47 @@ vaddr_t prepare_env(vaddr_t top)
 	return top;
 }
 
-void launch_user_init(const char *filename)
+process_t *launch_user_init(process_t *parent, const char *filename)
 {
-	process_t *root = new (process_t);
+	process_t *process = new (process_t);
 	vmspace_t *vmspace = new (vmspace_t);
 	thread_t *current = thread_self();
 
-	slot_alloc_install(root, root);
-	slot_alloc_install(root, vmspace);
+	slot_alloc_install(parent, process);
+
+	slot_alloc_install(process, process);
+	slot_alloc_install(process, vmspace);
 
 	paddr_t pc = load_binary(vmspace, filename, 0x20000000UL);
+
+	if (!pc)
+	{
+		LOGE("Failed to load " $(filename));
+		return NULL;
+	}
 
 	vaddr_t ustack = (vaddr_t)alloc_page(1);
 	map_range_in_pgtbl(vmspace->pgtbl, ustack, ustack, PGSIZE, PTE_R | PTE_W | PTE_U);
 
 	vaddr_t sp = prepare_env(ustack + PGSIZE);
-	thread_t *thread = thread_create(root, (void *)sp, (void *)pc, NULL);
+	thread_t *thread = thread_create(process, (void *)sp, (void *)pc, NULL);
 
 	struct pt_regs *regs = (struct pt_regs *)(current->thread_info.kernel_sp - sizeof(struct pt_regs));
 
 	thread_resume(thread);
+
+	return process;
+}
+
+static process_t *root;
+
+void do_user_init()
+{
+	root = new (process_t);
+	vmspace_t *vmspace = new (vmspace_t);
+	slot_alloc_install(root, root);
+	slot_alloc_install(root, vmspace);
+
+	launch_user_init(root, "/test");
+	launch_user_init(root, "/vfs_server");
 }

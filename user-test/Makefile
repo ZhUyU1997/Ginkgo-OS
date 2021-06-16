@@ -17,9 +17,9 @@ X_LIBS		= user
 X_LIBDIRS	= $(src)/lib
 
 
-MODULE		= lib test
+MODULE		= lib test vfs_server
 
-test: lib
+test vfs_server: lib
 
 X_PREPARE	:= $(src)/include/syscall_table.h
 

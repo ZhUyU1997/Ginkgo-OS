@@ -31,7 +31,7 @@ void main()
 #endif
     do_sched_init();
 
-    launch_user_init("/test");
+    do_user_init();
     local_irq_enable();
 
     // Not support kernel preemption, must be scheduled manually
