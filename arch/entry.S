@@ -175,7 +175,7 @@ work_pending:
 	ret
 work_resched:
 	la ra, ret_from_exception
-	call schedule
+	tail schedule
 
 .globl timer_vector
 .align 4

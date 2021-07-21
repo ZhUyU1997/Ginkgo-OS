@@ -58,6 +58,7 @@ void schedule()
     spin_lock(&sched_lock);
 
     thread_t *current = thread_self();
+    current->thread_info.flags &= ~NEED_RESCHED;
 
     if (current->status == TASK_STATUS_SUSPEND || current->status == TASK_STATUS_EXIT)
     {
@@ -76,6 +77,7 @@ void schedule()
     current = thread_self_set(thread);
 
     current->status = TASK_STATUS_RUNNING;
+    LOGI($(old)" -> "$(current));
 
     spin_unlock(&sched_lock);
 
