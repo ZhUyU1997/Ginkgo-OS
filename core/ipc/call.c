@@ -46,15 +46,6 @@ static u64_t thread_migrate_to_server(ipc_connection_t *conn, u64_t arg)
     target->active_conn = conn;
 
     struct pt_regs *regs = (struct pt_regs *)(target->thread_info.kernel_sp - sizeof(struct pt_regs));
-    LOGI($(conn->server_stack_top));
-    LOGI($(target->thread_info.kernel_sp));
-    LOGI($(conn->target->server_ipc_config->callback));
-    LOGI($(target->vmspace));
-    LOGI($(target->vmspace->pgtbl));
-
-    regs->sstatus = csr_read(sstatus);
-    regs->sstatus &= ~(SSTATUS_SPP);
-    regs->sstatus |= SSTATUS_SPIE;
 
     regs->sp = (uintptr_t)conn->server_stack_top;
     regs->a0 = (uintptr_t)arg;
