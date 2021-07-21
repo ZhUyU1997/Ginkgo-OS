@@ -6,6 +6,7 @@
 #include <malloc.h>
 #include <list.h>
 #include <log.h>
+#include <assert.h>
 
 class_impl(vmspace_t, kobject_t){
 
@@ -149,7 +150,7 @@ bool_t arch_vmspace_map_range(vmspace_t *vmspace, vaddr_t va, size_t len, u64_t 
 	/* on-demand mapping for anonymous mapping */
 	if (vmo->type == VMO_DATA)
 		fill_page_table(vmspace, vmr);
-	return 0;
+	return TRUE;
 out_free_vmr:
 	vmregion_free(vmr);
 out_fail:
@@ -158,6 +159,8 @@ out_fail:
 
 bool_t vmspace_map_range_user(vmspace_t *vmspace, vaddr_t va, size_t len, u64_t prot, u64_t flags, vmobject_t *vmo)
 {
+	assert(vmspace && len > 0);
+
 	u64_t arch_flags = 0;
 
 	if (prot | PROT_EXEC)
@@ -171,6 +174,8 @@ bool_t vmspace_map_range_user(vmspace_t *vmspace, vaddr_t va, size_t len, u64_t 
 
 bool_t vmspace_map_range_kernel(vmspace_t *vmspace, vaddr_t va, size_t len, u64_t prot, u64_t flags, vmobject_t *vmo)
 {
+	assert(vmspace && len > 0);
+
 	u64_t arch_flags = 0;
 
 	if (prot | PROT_EXEC)
@@ -184,6 +189,8 @@ bool_t vmspace_map_range_kernel(vmspace_t *vmspace, vaddr_t va, size_t len, u64_
 
 bool_t vmspace_unmap_range(vmspace_t *vmspace, vaddr_t va, size_t len)
 {
+	assert(vmspace && len > 0);
+
 	struct vmregion *vmr;
 	vaddr_t start;
 	size_t size;

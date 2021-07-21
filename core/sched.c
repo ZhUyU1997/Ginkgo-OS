@@ -35,6 +35,24 @@ void scheduler_dequeue_task(thread_t *thread)
     list_del_init(&thread->ready_queue_node);
 }
 
+void schedule_to(thread_t *thread)
+{
+    spin_lock(&sched_lock);
+
+    thread_t *current = thread_self();
+    current->status = TASK_STATUS_SUSPEND;
+    init_list_head(&current->ready_queue_node);
+
+    thread_t *old = current;
+    current = thread_self_set(thread);
+    current->status = TASK_STATUS_RUNNING;
+
+    spin_unlock(&sched_lock);
+
+    switch_mm(current);
+    switch_to(old, current);
+}
+
 void schedule()
 {
     spin_lock(&sched_lock);

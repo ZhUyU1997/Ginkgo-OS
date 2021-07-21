@@ -7,7 +7,6 @@
 
 int slot_alloc(process_t *process)
 {
-
 	assert(process);
 
 	unsigned int size = process->slot_table.slots_size;
@@ -90,12 +89,11 @@ constructor(process_t)
 {
 	init_list_head(&this->thread_list);
 	this->slot_table.slots_size = MAX_SLOTS_SIZE;
-	this->slot_table.slots = malloc(MAX_SLOTS_SIZE * sizeof(kobject_t *));
+	this->slot_table.slots = calloc(1, MAX_SLOTS_SIZE * sizeof(kobject_t *));
 }
 
 static paddr_t load_binary(vmspace_t *vmspace, const char *file, vaddr_t addr)
 {
-	vfs_mount("virtio-block", "/", "cpio", MOUNT_RO);
 	int fd = vfs_open(file, O_RDONLY, 0);
 
 	if (fd < 0)
@@ -190,6 +188,8 @@ void do_user_init()
 	slot_alloc_install(root, root);
 	slot_alloc_install(root, vmspace);
 
-	launch_user_init(root, "/test");
+	vfs_mount("virtio-block", "/", "cpio", MOUNT_RO);
+
 	launch_user_init(root, "/vfs_server");
+	launch_user_init(root, "/test_vfs");
 }

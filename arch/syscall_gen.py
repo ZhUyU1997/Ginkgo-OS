@@ -11,12 +11,19 @@ syscall_table = [
     "vmo_write",
     "vmo_read",
     "vmo_map",
+    "register_server",
+    "register_named_server",
+    "register_client",
+    "register_client_by_name",
+    "ipc_call",
+    "ipc_return",
     "nanosleep",
     "clock_get",
     "clock_get_monotonic",
     "ticks_get",
     "ticks_per_second",
-    "deadline_after"
+    "deadline_after",
+    "yield",
 ]
 
 print("#pragma once")

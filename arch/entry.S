@@ -58,6 +58,7 @@ _save_context:
 	REG_S s3, PT_SBADADDR(sp)
 	REG_S s4, PT_SCAUSE(sp)
 	REG_S s5, PT_TP(sp)
+	REG_S sp, TASK_TI_REGS(tp)
 
 	/*
 	 * Set sscratch register to 0, so that if a recursive exception
@@ -124,6 +125,7 @@ resume_userspace:
 	csrw CSR_SSCRATCH, tp
 
 restore_all:
+	REG_S x0, TASK_TI_REGS(tp)
 	REG_L a0, PT_SSTATUS(sp)
 	REG_L  a2, PT_SEPC(sp)
 	REG_SC x0, a2, PT_SEPC(sp)

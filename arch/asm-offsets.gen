@@ -6,6 +6,7 @@ void asm_offsets(void)
     OFFSET(TASK_TI_KERNEL_SP, thread_t, thread_info.kernel_sp);
     OFFSET(TASK_TI_USER_SP, thread_t, thread_info.user_sp);
     OFFSET(TASK_TI_FLAGS, thread_t, thread_info.flags);
+    OFFSET(TASK_TI_REGS, thread_t, thread_info.regs);
     OFFSET(TASK_CTX, thread_t, context);
 
     DEFINE(TIF_NEED_RESCHED, NEED_RESCHED);

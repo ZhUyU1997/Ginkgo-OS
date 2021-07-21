@@ -130,7 +130,6 @@ int sys_vmo_map(u64_t target_process_slot, u64_t slot, u64_t addr, u64_t prot, u
         r = -1;
         goto out_fail;
     }
-    target_process = dynamic_cast(process_t)(slot_get(process_self(), target_process_slot));
 
     /* map the vmo to the target process */
     target_process = dynamic_cast(process_t)(slot_get(process_self(), target_process_slot));

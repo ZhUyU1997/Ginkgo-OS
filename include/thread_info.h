@@ -14,4 +14,5 @@ struct thread_info
     long kernel_sp; /* Kernel stack pointer */
     long user_sp;   /* User stack pointer */
     int cpu;
+    struct pt_regs *regs;
 };

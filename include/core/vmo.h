@@ -24,6 +24,7 @@ class(vmobject_t, kobject_t)
 };
 
 vmobject_t *vmo_create(u64_t size, u64_t type);
+void vmo_init(vmobject_t *vmo, vmo_type_t type, size_t len, paddr_t paddr);
 
 int sys_vmo_create(u64_t size, u64_t type);
 int sys_vmo_write(u64_t slot, u64_t offset, u64_t user_ptr, u64_t len);

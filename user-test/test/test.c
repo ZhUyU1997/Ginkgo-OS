@@ -1,31 +1,8 @@
 #include <syscall.h>
+#include <string.h>
+
 #include "types.h"
 #include "print.h"
-
-typedef enum
-{
-    VMO_ANONYM = 0,     /* lazy allocation */
-    VMO_DATA = 1,       /* immediate allocation */
-    VMO_FILE = 2,       /* file backed */
-    VMO_SHM = 3,        /* shared memory */
-    VMO_USER_PAGER = 4, /* support user pager */
-    VMO_DEVICE = 5,     /* memory mapped device registers */
-} vmo_type_t;
-
-#define VM_READ  (1 << 0)
-#define VM_WRITE (1 << 1)
-#define VM_EXEC  (1 << 2)
-
-void *memset(void *dst, int c, uint32 n)
-{
-    char *cdst = (char *)dst;
-    int i;
-    for (i = 0; i < n; i++)
-    {
-        cdst[i] = c;
-    }
-    return dst;
-}
 
 void test_vmo()
 {
@@ -39,6 +16,7 @@ void test_vmo()
 void test_vmo_map()
 {
     int slot = usys_vmo_create(1024, VMO_DATA);
+    printf("slot:%d\n", slot);
     char buf[1024] = "hello vmo\n";
     usys_vmo_write(slot, 0, (u64_t)buf, 1024);
     usys_vmo_map(0, slot, (u64_t)0x100000, VM_READ | VM_WRITE, 0);

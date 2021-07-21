@@ -12,7 +12,13 @@ X_CFLAGS	+= -std=gnu11 -O3 -g -ggdb \
 				-ffreestanding -fsigned-char \
 				-fno-omit-frame-pointer -fno-common -nostdlib -mno-relax \
 				-fno-pie
-				
+X_ASFLAGS	+= -std=gnu11 -O3 -g -ggdb \
+				$(W_FLAGS) \
+				-march=rv64g -mabi=lp64d -mcmodel=medany \
+				-ffreestanding -fsigned-char \
+				-fno-omit-frame-pointer -fno-common -nostdlib -mno-relax \
+				-fno-pie
+
 X_INCDIRS	+= include arch/include
 X_LDFLAGS	+= -z max-page-size=4096 -T kernel.ld -no-pie -nostdlib
 
@@ -20,7 +26,7 @@ X_CLEAN		+= kernel.asm kernel.sym
 NAME		:= kernel
 SRC			+= arch/ arch/head.S arch/entry.S arch/context_switch.S \
 				arch/start.c arch/vm.c arch/exception.c arch/device.c arch/syscall_table.c \
-				init/*.c core/*.c core/class/*.c core/graphic/*.c core/sys/*.c mm/*.c \
+				init/*.c core/*.c core/class/*.c core/graphic/*.c core/sys/*.c core/ipc/*.c mm/*.c \
 				fs/cpio/*.c fs/*.c \
 				driver/*.c driver/virtio/*.c \
 				lib/*.c lib/libc/*.c \
@@ -38,7 +44,7 @@ MODULE		+= user-test
 arch/include/asm-offsets.h: arch/asm-offsets.gen
 	@echo GEN $@
 	@$(CC) -xc $(X_CFLAGS) $(X_CPPFLAGS) -S -o $<.s $<
-	@cat $<.s | sed -n '/^.ascii/s/\.ascii\ \"\([^"]*\)\"/\1/p' >> $@
+	@cat $<.s | sed -n '/^.ascii/s/\.ascii\ \"\([^"]*\)\"/\1/p' > $@
 	@rm $<.s
 
 arch/include/syscall_table.h: arch/syscall_gen.py
@@ -90,7 +96,7 @@ fs.img: FORCE
 	@cd rootfs && $(FIND) . -not -name . | $(CPIO) > ../fs.img
 
 cloc:
-	cloc . --include-ext=c,h,S --exclude-dir=scripts,rootfs
+	cloc . --include-ext=c,h,S --exclude-dir=scripts,rootfs --by-file
 
 FORCE: ;
 

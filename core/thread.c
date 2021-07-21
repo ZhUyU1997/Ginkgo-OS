@@ -152,6 +152,12 @@ void thread_suspend(thread_t *thread)
     }
 }
 
+
+void sys_yield()
+{
+    thread_suspend(thread_self());
+}
+
 void thread_need_sched(thread_t *thread)
 {
     thread->thread_info.flags |= NEED_RESCHED;

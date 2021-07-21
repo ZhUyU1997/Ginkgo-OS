@@ -77,20 +77,15 @@ static inline int intr_get()
 #define r_tp() register_read(tp)
 #define r_ra() register_read(ra)
 
-// flush the TLB.
-static inline void local_flush_tlb_all()
+static inline void local_flush_tlb_all(void)
 {
-    // the zero, zero means flush all TLB entries.
-    __asm__ __volatile__("sfence.vma zero, zero");
+	__asm__ __volatile__ ("sfence.vma" : : : "memory");
 }
 
 /* Flush one page from local TLB */
 static inline void local_flush_tlb_page(unsigned long addr)
 {
-    __asm__ __volatile__("sfence.vma %0"
-                         :
-                         : "r"(addr)
-                         : "memory");
+	__asm__ __volatile__ ("sfence.vma %0" : : "r" (addr) : "memory");
 }
 
 #define PGSIZE 4096 // bytes per page

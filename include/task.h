@@ -6,6 +6,7 @@
 #include <list.h>
 #include <core/kobject.h>
 #include <core/vmspace.h>
+#include <core/ipc.h>
 #include <thread_info.h>
 
 struct pt_regs
@@ -109,6 +110,9 @@ class(thread_t, kobject_t)
 	size_t sz;
 	struct context context;
 	const char *name;
+
+	ipc_connection_t *active_conn;
+	struct server_ipc_config *server_ipc_config;
 };
 
 typedef void (*task_func_t)();
