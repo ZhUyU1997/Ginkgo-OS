@@ -163,6 +163,11 @@ void thread_need_sched(thread_t *thread)
     thread->thread_info.flags |= NEED_RESCHED;
 }
 
+void thread_clear_sched_flag(thread_t *thread)
+{
+    thread->thread_info.flags &= ~NEED_RESCHED;
+}
+
 // should be kept at the end of the file to let the compiler check for incorrect usage
 static thread_t *current = NULL;
 

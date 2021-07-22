@@ -58,7 +58,7 @@ void schedule()
     spin_lock(&sched_lock);
 
     thread_t *current = thread_self();
-    current->thread_info.flags &= ~NEED_RESCHED;
+    thread_clear_sched_flag(current);
 
     if (current->status == TASK_STATUS_SUSPEND || current->status == TASK_STATUS_EXIT)
     {

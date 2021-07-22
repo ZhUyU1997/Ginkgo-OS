@@ -127,6 +127,7 @@ void thread_suspend(thread_t *);
 void thread_destroy(thread_t *);
 void thread_exit(thread_t *);
 void thread_need_sched(thread_t *);
+void thread_clear_sched_flag(thread_t *);
 
 int slot_alloc(process_t *process);
 kobject_t *slot_get(process_t *process, int slot);
