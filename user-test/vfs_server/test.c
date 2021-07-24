@@ -6,8 +6,8 @@
 static int exit_flag = 0;
 static void fs_dispatch(ipc_msg_t *ipc_msg)
 {
-    printf("fs_dispatch\n");
-    ipc_return(0);
+    static int i = 0;
+    ipc_return(i++);
 }
 
 int main(int argc, char **argv)

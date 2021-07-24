@@ -10,7 +10,8 @@ int main(int argc, char **argv)
     printf("test vfs\n");
     ipc_struct_t client_ipc_struct;
     ipc_register_client_by_name("vfs", &client_ipc_struct);
-    ipc_call(&client_ipc_struct, NULL);
+    int ret = ipc_call(&client_ipc_struct, NULL);
+    printf("ipc_call ret:%d\n", ret);
 
     printf("test vfs end\n");
     return 0;

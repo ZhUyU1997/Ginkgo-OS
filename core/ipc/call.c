@@ -74,7 +74,7 @@ u64_t sys_ipc_call(u32_t conn_cap, ipc_msg_t *ipc_msg)
 
     u64_t arg = conn->buf.server_user_addr;
     thread_migrate_to_server(conn, arg);
-    return 0;
+    return thread_self()->thread_info.regs->a0;
 }
 
 u64_t sys_ipc_reg_call(u32_t conn_cap, u64_t arg0)
