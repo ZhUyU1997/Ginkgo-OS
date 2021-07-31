@@ -6,6 +6,9 @@
 static int exit_flag = 0;
 static void fs_dispatch(ipc_msg_t *ipc_msg)
 {
+    const char *s = ipc_get_msg_data(ipc_msg);
+    printf("ipc_msg:%s\n", s);
+
     static int i = 0;
     ipc_return(i++);
 }

@@ -1,7 +1,7 @@
 X_CLEAN		= $(obj)/*.asm $(obj)/*.sym
 
 NAME		:= vfs_server
-SRC			= test.c
+SRC			= *.c
 
 define CUSTOM_TARGET_CMD
 echo [OUTPUT] $@; \

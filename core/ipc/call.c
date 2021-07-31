@@ -55,7 +55,6 @@ static u64_t thread_migrate_to_server(ipc_connection_t *conn, u64_t arg)
 }
 
 /**
- * Lab4
  * The client thread calls sys_ipc_call to migrate to the server thread.
  * When you transfer the ipc_msg (which is the virtual address in the client
  * vmspace), do not forget to change the virtual address to server's vmspace.
@@ -75,11 +74,4 @@ u64_t sys_ipc_call(u32_t conn_cap, ipc_msg_t *ipc_msg)
     u64_t arg = conn->buf.server_user_addr;
     thread_migrate_to_server(conn, arg);
     return thread_self()->thread_info.regs->a0;
-}
-
-u64_t sys_ipc_reg_call(u32_t conn_cap, u64_t arg0)
-{
-    ipc_connection_t *conn = dynamic_cast(ipc_connection_t)(slot_get(process_self(), conn_cap));
-    thread_migrate_to_server(conn, arg0);
-    return 0;
 }
