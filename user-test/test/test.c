@@ -25,6 +25,13 @@ void test_vmo_map()
     printf((const char *)addr);
 }
 
+void test_nanosleep()
+{
+    printf("test_nanosleep:start\n");
+    usys_nanosleep(usys_deadline_after(1000000000));
+    printf("test_nanosleep:end\n");
+}
+
 int main(int argc, char **argv)
 {
     printf("%d\n",argc);
@@ -36,5 +43,6 @@ int main(int argc, char **argv)
 
     test_vmo();
     test_vmo_map();
+    test_nanosleep();
     return 0;
 }

@@ -18,6 +18,7 @@ constructor(thread_t)
 
 destructor(thread_t)
 {
+    timer_cancel(&this->sleep_timer);
 }
 
 int nextpid = 1;
@@ -49,8 +50,8 @@ thread_t *kthread_create(u64_t pc, u64_t arg)
 
     thread->thread_info.kernel_sp = thread->kstack + KERNEL_STACK_SIZE;
 
-    thread->context.ra = (register_t)task_helper;
-    thread->context.s0 = (register_t)pc;
+    thread->context.ra = (unsigned long)task_helper;
+    thread->context.s0 = (unsigned long)pc;
     thread->context.sp = thread->thread_info.kernel_sp;
 
     LOGI("context.sp:" $(thread->context.sp));
@@ -81,8 +82,8 @@ thread_t *thread_create(process_t *process, void *stack, void *pc, void *arg)
 
     void ret_from_exception();
 
-    thread->context.ra = (register_t)ret_from_exception;
-    thread->context.sp = (register_t)regs;
+    thread->context.ra = (unsigned long)ret_from_exception;
+    thread->context.sp = (unsigned long)regs;
 
     LOGI("context.sp:" $(thread->context.sp));
 

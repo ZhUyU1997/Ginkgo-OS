@@ -1,6 +1,7 @@
 #pragma once
 
 #include <types.h>
+#include <time.h>
 
 typedef enum
 {
@@ -15,6 +16,8 @@ typedef enum
 #define VM_READ  (1 << 0)
 #define VM_WRITE (1 << 1)
 #define VM_EXEC  (1 << 2)
+
+typedef s32_t status_t; // for syscall
 
 void usys_putc(char c);
 int usys_process_create();
@@ -31,4 +34,23 @@ u32_t usys_register_client_by_name(const char *name, u64_t vm_config_ptr);
 u32_t usys_ipc_call(u64_t icb, u64_t ipc_msg);
 void usys_ipc_return(u64_t ret);
 
+typedef union
+{
+    s64_t tv64;
+} ktime_t;
+
+typedef s64_t kticks_t;
+typedef s64_t kduration_t;
+
+static inline s64_t ktime_to_ns(const ktime_t kt)
+{
+    return ((kt).tv64);
+}
+
+status_t usys_nanosleep(ktime_t deadline);
+status_t usys_clock_get(clockid_t type, ktime_t *time);
+ktime_t usys_clock_get_monotonic();
+kticks_t usys_ticks_get();
+kticks_t usys_ticks_per_second();
+ktime_t usys_deadline_after(kduration_t nanoseconds);
 void usys_yield();

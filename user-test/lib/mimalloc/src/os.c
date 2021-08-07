@@ -33,7 +33,6 @@ terms of the MIT license. A copy of the license can be found in the file
 // stdlib.h is all we need, and has already been included in mimalloc.h
 #else
 #include <sys/mman.h>  // mmap
-#include <unistd.h>    // sysconf
 #if defined(__linux__)
 #include <features.h>
 #if defined(__GLIBC__)
@@ -216,7 +215,7 @@ void _mi_os_init() {
 #else
 void _mi_os_init() {
   // get the page size
-  long result = sysconf(_SC_PAGESIZE);
+  long result = 4096;
   if (result > 0) {
     os_page_size = (size_t)result;
     os_alloc_granularity = os_page_size;
@@ -980,39 +979,6 @@ static void* mi_os_alloc_huge_os_pagesx(void* addr, size_t size, int numa_node)
   return VirtualAlloc(addr, size, flags, PAGE_READWRITE);
 }
 
-#elif defined(MI_OS_USE_MMAP) && (MI_INTPTR_SIZE >= 8) && !defined(__HAIKU__)
-#include <sys/syscall.h>
-#ifndef MPOL_PREFERRED
-#define MPOL_PREFERRED 1
-#endif
-#if defined(SYS_mbind)
-static long mi_os_mbind(void* start, unsigned long len, unsigned long mode, const unsigned long* nmask, unsigned long maxnode, unsigned flags) {
-  return syscall(SYS_mbind, start, len, mode, nmask, maxnode, flags);
-}
-#else
-static long mi_os_mbind(void* start, unsigned long len, unsigned long mode, const unsigned long* nmask, unsigned long maxnode, unsigned flags) {
-  UNUSED(start); UNUSED(len); UNUSED(mode); UNUSED(nmask); UNUSED(maxnode); UNUSED(flags);
-  return 0;
-}
-#endif
-static void* mi_os_alloc_huge_os_pagesx(void* addr, size_t size, int numa_node) {
-  mi_assert_internal(size%GiB == 0);
-  bool is_large = true;
-  void* p = mi_unix_mmap(addr, size, MI_SEGMENT_SIZE, PROT_READ | PROT_WRITE, true, true, &is_large);
-  if (p == NULL) return NULL;
-  if (numa_node >= 0 && numa_node < 8*MI_INTPTR_SIZE) { // at most 64 nodes
-    uintptr_t numa_mask = (1UL << numa_node);
-    // TODO: does `mbind` work correctly for huge OS pages? should we
-    // use `set_mempolicy` before calling mmap instead?
-    // see: <https://lkml.org/lkml/2017/2/9/875>
-    long err = mi_os_mbind(p, size, MPOL_PREFERRED, &numa_mask, 8*MI_INTPTR_SIZE, 0);
-    if (err != 0) {
-      _mi_warning_message("failed to bind huge (1gb) pages to numa node %d: %s\n", numa_node, strerror(errno));
-    }
-  }
-  return p;
-}
-#else
 static void* mi_os_alloc_huge_os_pagesx(void* addr, size_t size, int numa_node) {
   UNUSED(addr); UNUSED(size); UNUSED(numa_node);
   return NULL;

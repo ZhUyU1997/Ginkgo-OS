@@ -9,11 +9,16 @@ typedef union
 
 typedef s64_t kticks_t;
 typedef s64_t kduration_t;
-typedef u32_t clock_id_t;
+typedef u32_t clockid_t;
 
-#define CLOCK_MONOTONIC ((clock_id_t)0)
-#define CLOCK_UTC ((clock_id_t)1)
-#define CLOCK_THREAD ((clock_id_t)2)
+/* Identifier for system-wide realtime clock.  */
+# define CLOCK_REALTIME			0
+/* Monotonic system-wide clock.  */
+# define CLOCK_MONOTONIC		1
+/* High-resolution timer from the CPU.  */
+# define CLOCK_PROCESS_CPUTIME_ID	2
+/* Thread-specific CPU-time clock.  */
+# define CLOCK_THREAD_CPUTIME_ID	3
 
 #define KTIME_MAX ((s64_t) ~((u64_t)1 << 63))
 #define KTIME_SEC_MAX (KTIME_MAX / 1000000000ULL)

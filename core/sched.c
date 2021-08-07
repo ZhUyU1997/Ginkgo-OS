@@ -77,7 +77,7 @@ void schedule()
     current = thread_self_set(thread);
 
     current->status = TASK_STATUS_RUNNING;
-    LOGI($(old)" -> "$(current));
+    // LOGI($(old)" -> "$(current));
 
     spin_unlock(&sched_lock);
 

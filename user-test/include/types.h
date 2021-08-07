@@ -34,7 +34,6 @@ typedef uint64 vaddr_t;
 typedef uint64 paddr_t;
 typedef uint64 addr_t;
 typedef uint64 size_t;
-typedef uint64 register_t;
 typedef uint64 irq_flags_t;
 
 typedef sint64 ssize_t;

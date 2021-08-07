@@ -322,9 +322,9 @@ static inline void mi_atomic_yield(void) {
   sched_yield();
 }
 #else
-#include <unistd.h>
+#include <syscall.h>
 static inline void mi_atomic_yield(void) {
-  sleep(0);
+  usys_yield();
 }
 #endif
 

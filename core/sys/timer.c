@@ -6,7 +6,7 @@
 #include <malloc.h>
 #include <task.h>
 
-status_t sys_timer_create(uint32_t options, clock_id_t clock_id, u64_t *out_slot)
+status_t sys_timer_create(uint32_t options, clockid_t clock_id, u64_t *out_slot)
 {
     if (clock_id != CLOCK_MONOTONIC)
         return SS_ERR_INVALID_ARGS;

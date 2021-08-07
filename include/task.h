@@ -7,6 +7,7 @@
 #include <core/kobject.h>
 #include <core/vmspace.h>
 #include <core/ipc.h>
+#include <core/timer.h>
 #include <thread_info.h>
 
 struct pt_regs
@@ -52,22 +53,22 @@ struct pt_regs
 // Saved registers for kernel context switches.
 struct context
 {
-	register_t ra;
-	register_t sp;
+	unsigned long ra;
+	unsigned long sp;
 
 	// callee-saved
-	register_t s0;
-	register_t s1;
-	register_t s2;
-	register_t s3;
-	register_t s4;
-	register_t s5;
-	register_t s6;
-	register_t s7;
-	register_t s8;
-	register_t s9;
-	register_t s10;
-	register_t s11;
+	unsigned long s0;
+	unsigned long s1;
+	unsigned long s2;
+	unsigned long s3;
+	unsigned long s4;
+	unsigned long s5;
+	unsigned long s6;
+	unsigned long s7;
+	unsigned long s8;
+	unsigned long s9;
+	unsigned long s10;
+	unsigned long s11;
 };
 
 enum task_status_t
@@ -113,6 +114,7 @@ class(thread_t, kobject_t)
 
 	ipc_connection_t *active_conn;
 	struct server_ipc_config *server_ipc_config;
+	timer_t sleep_timer;
 };
 
 typedef void (*task_func_t)();

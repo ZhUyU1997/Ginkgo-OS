@@ -2,8 +2,19 @@ ifeq ($(strip $(filter-out clean,$(MAKECMDGOALS))),)
 sinclude scripts/env.mk
 
 
-CROSS_COMPILE	:= riscv64-linux-gnu-
+CROSS_COMPILE	:= riscv64-unknown-elf-
 export CROSS_COMPILE
+
+# What is -ffreestanding?
+# https://gcc.gnu.org/onlinedocs/gcc/Standards.html
+# The ISO C standard defines (in clause 4) two classes of conforming implementation.
+# A conforming hosted implementation supports the whole standard including all the library facilities;
+# a conforming freestanding implementation is only required to provide certain library facilities:
+# those in <float.h>, <limits.h>, <stdarg.h>, and <stddef.h>;
+# since AMD1, also those in <iso646.h>;
+# since C99, also those in <stdbool.h> and <stdint.h>;
+# and since C11, also those in <stdalign.h> and <stdnoreturn.h>.
+# In addition, complex types, added in C99, are not required for freestanding implementations.
 
 W_FLAGS		= -Wall -Werror=implicit-function-declaration -Wno-unused-function -Werror=return-type -Wno-unused-but-set-variable -Wno-unused-variable
 X_CFLAGS	+= -std=gnu11 -O3 -g -ggdb \
@@ -93,6 +104,7 @@ CPIO		:=	cpio -o -H newc --quiet
 
 fs.img: FORCE
 	@echo [CPIO] $@;
+	@$(if $(wildcard rootfs),:,@echo [MKDIR] rootfs && mkdir rootfs)
 	@cd rootfs && $(FIND) . -not -name . | $(CPIO) > ../fs.img
 
 cloc:

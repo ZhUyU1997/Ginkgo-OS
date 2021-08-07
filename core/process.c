@@ -77,6 +77,7 @@ int sys_process_create(void)
 
 void sys_process_exit(s64_t retcode)
 {
+	LOGI();
 	// send dying signal to all threads in this process
 
 	// exit this thread.
@@ -189,7 +190,8 @@ void do_user_init()
 	slot_alloc_install(root, vmspace);
 
 	vfs_mount("virtio-block", "/", "cpio", MOUNT_RO);
-
-	launch_user_init(root, "/vfs_server");
-	launch_user_init(root, "/test_vfs");
+	launch_user_init(root, "/idle");
+	launch_user_init(root, "/test");
+	// launch_user_init(root, "/vfs_server");
+	// launch_user_init(root, "/test_vfs");
 }
