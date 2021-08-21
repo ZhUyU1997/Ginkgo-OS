@@ -54,3 +54,5 @@ kticks_t usys_ticks_get();
 kticks_t usys_ticks_per_second();
 ktime_t usys_deadline_after(kduration_t nanoseconds);
 void usys_yield();
+int usys_futex_wait(u32_t *uaddr, u32_t val);
+int usys_futex_wake(u32_t *uaddr);

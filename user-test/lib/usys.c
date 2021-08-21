@@ -34,3 +34,5 @@ SYSFUNC_DEF(ticks_get);
 SYSFUNC_DEF(ticks_per_second);
 SYSFUNC_DEF(deadline_after);
 SYSFUNC_DEF(yield);
+SYSFUNC_DEF(futex_wait);
+SYSFUNC_DEF(futex_wake);

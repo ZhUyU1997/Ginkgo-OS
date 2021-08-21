@@ -48,7 +48,9 @@ X_DEFINES	+= UNIT_TEST=1
 SRC			+= ut/
 endif
 
+# If the dependency files of arch/asm-offsets.gen are changed, must clean & rebuild.
 X_PREPARE	:= arch/include/asm-offsets.h arch/include/syscall_table.h
+X_CLEAN		:= arch/include/asm-offsets.h arch/include/syscall_table.h
 
 MODULE		+= user-test
 

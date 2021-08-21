@@ -193,7 +193,7 @@ static unsigned int set_class_table_info(struct class_table_info *info)
 	return info->full_size;
 }
 
-void do_init_class()
+void do_class_init()
 {
 	type_index type = 0;
 	for (struct class_table_info *info = __class_table_start; info < __class_table_end; info++)

@@ -4,6 +4,7 @@
 #include <types.h>
 #include <riscv.h>
 #include <list.h>
+#include <barrier.h>
 #include <core/kobject.h>
 #include <core/vmspace.h>
 #include <core/ipc.h>
@@ -102,6 +103,7 @@ class(thread_t, kobject_t)
 	struct list_head node;
 	struct list_head ready_queue_node;
 	struct list_head mlist;
+	struct list_head wake_list;
 
 	process_t *process;
 	vmspace_t *vmspace;
@@ -120,6 +122,13 @@ class(thread_t, kobject_t)
 typedef void (*task_func_t)();
 
 #define process_self() (thread_self()->process)
+
+static inline void thread_self_set_state(enum task_status_t status)
+{
+	thread_self()->status = status;
+	//TODO: Linux 有特别的说明，没法理解，姑且在这个加个memory barrier,thread_resume逻辑还需recheck. 具体参考：Linux： try_to_wake_up
+	smp_mb();
+}
 
 thread_t *thread_self(void);
 thread_t *thread_self_set(thread_t *thread);

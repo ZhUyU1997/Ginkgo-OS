@@ -32,17 +32,28 @@ void test_nanosleep()
     printf("test_nanosleep:end\n");
 }
 
+void test_futex()
+{
+    //TODO: write UT
+    int i = 1;
+    printf("test_futex:start\n");
+    // usys_futex_wait(&i, 1);
+    // usys_futex_wake(&i);
+    printf("test_futex:end\n");
+}
+
 int main(int argc, char **argv)
 {
-    printf("%d\n",argc);
-    printf("%p\n",argv);
-    printf("%s\n",argv[0]);
-    printf("%s\n",argv[1]);
+    printf("%d\n", argc);
+    printf("%p\n", argv);
+    printf("%s\n", argv[0]);
+    printf("%s\n", argv[1]);
 
     printf("main\n");
 
     test_vmo();
     test_vmo_map();
     test_nanosleep();
+    test_futex();
     return 0;
 }

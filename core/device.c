@@ -30,7 +30,7 @@ static void register_device(type_index index)
     }
 }
 
-void do_init_device()
+void do_device_init()
 {
     map = hmap_alloc(0);
     device_map = hmap_alloc(0);

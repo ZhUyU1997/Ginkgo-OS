@@ -14,6 +14,7 @@ constructor(thread_t)
     init_list_head(&this->ready_queue_node);
     init_list_head(&this->mlist);
     init_list_head(&this->node);
+    init_list_head(&this->wake_list);
 }
 
 destructor(thread_t)

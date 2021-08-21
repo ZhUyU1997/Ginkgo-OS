@@ -94,6 +94,6 @@ void *class_cast(type_index type, void *obj);
 class(object_t){};
 
 
-void do_init_class();
+void do_class_init();
 
 #endif /* __CHARSET_H__ */

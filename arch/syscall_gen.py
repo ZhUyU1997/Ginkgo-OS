@@ -24,6 +24,8 @@ syscall_table = [
     "ticks_per_second",
     "deadline_after",
     "yield",
+    "futex_wait",
+    "futex_wake",
 ]
 
 print("#pragma once")

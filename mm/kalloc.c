@@ -64,7 +64,7 @@ void *realloc(void *old, size_t size)
     return new;
 }
 
-void do_init_mem()
+void do_mem_init()
 {
     system = buddy_create(end, (size_t)PHYSTOP - (size_t)end);
     mem_pool_create(control, system);

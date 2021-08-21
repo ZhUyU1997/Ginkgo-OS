@@ -4,4 +4,4 @@
 
 void free_page(void* pa);
 void* alloc_page(size_t count);
-void do_init_mem();
+void do_mem_init();

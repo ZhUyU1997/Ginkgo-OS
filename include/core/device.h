@@ -24,7 +24,7 @@ class(device_t)
     void (*resume)(device_t * this);
 };
 
-void do_init_device();
+void do_device_init();
 
 device_t *search_device(const char *name);
 

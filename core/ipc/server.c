@@ -37,7 +37,7 @@ u64_t sys_register_named_server(u64_t name, u64_t callback, u64_t max_client, u6
 
     int ret = register_server(thread_self(), callback, max_client, vm_config_ptr);
 
-    hmap_add(map, strdup(name), thread_self());
+    hmap_add(map, (const char *)name, thread_self());
     return ret;
 }
 

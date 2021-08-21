@@ -216,7 +216,7 @@ int vfs_access(const char * path, u32_t mode);
 int vfs_chmod(const char * path, u32_t mode);
 int vfs_stat(const char * path, struct vfs_stat_t * st);
 
-void do_init_vfs(void);
+void do_vfs_init(void);
 
 #ifdef __cplusplus
 }

@@ -1598,9 +1598,9 @@ int vfs_stat(const char *path, struct vfs_stat_t *st)
 	return err;
 }
 
-void do_init_vfs(void)
+void do_vfs_init(void)
 {
-	LOGD("do_init_vfs");
+	LOGD("do_vfs_init");
     map = hmap_alloc(0);
 	register_filesystem(class_type(filesystem_t));
 

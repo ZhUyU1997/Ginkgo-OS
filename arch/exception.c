@@ -103,9 +103,9 @@ void do_IRQ(struct pt_regs *regs)
     }
 }
 
-void do_init_trap()
+void do_trap_init()
 {
-    LOGD("do_init_trap");
+    LOGD("do_trap_init");
     csr_set(sie, SIE_SEIE | SIE_STIE | SIE_SSIE);
     // set up to take exceptions and traps while in the kernel.
     csr_write(stvec, (uint64)handle_exception);

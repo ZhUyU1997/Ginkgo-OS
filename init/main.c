@@ -12,19 +12,21 @@
 #include <vfs/vfs.h>
 #include <log.h>
 #include <types.h>
+#include <core/futex.h>
 
 void main()
 {
     LOGI("main");
-    do_init_trap();
-    do_init_mem();
-    do_init_class();
+    do_trap_init();
+    do_mem_init();
+    do_class_init();
 
+    do_futex_init();
     do_kvm_init();
     do_task_init();
 
-    do_init_device();
-    do_init_vfs();
+    do_device_init();
+    do_vfs_init();
 
 #ifdef UNIT_TEST
     thread_resume(kthread_create(do_all_test, NULL));

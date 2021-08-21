@@ -22,7 +22,9 @@
 #define __NR_ticks_per_second 20
 #define __NR_deadline_after 21
 #define __NR_yield 22
-#define __NR_syscalls 23
+#define __NR_futex_wait 23
+#define __NR_futex_wake 24
+#define __NR_syscalls 25
 
 #ifdef SYSCALL_IMPL
 
@@ -49,6 +51,8 @@ extern void sys_ticks_get();
 extern void sys_ticks_per_second();
 extern void sys_deadline_after();
 extern void sys_yield();
+extern void sys_futex_wait();
+extern void sys_futex_wake();
 
 void *sys_call_table[__NR_syscalls] = {
 	[__NR_ni_syscall] = sys_ni_syscall,
@@ -74,5 +78,7 @@ void *sys_call_table[__NR_syscalls] = {
 	[__NR_ticks_per_second] = sys_ticks_per_second,
 	[__NR_deadline_after] = sys_deadline_after,
 	[__NR_yield] = sys_yield,
+	[__NR_futex_wait] = sys_futex_wait,
+	[__NR_futex_wake] = sys_futex_wake,
 };
 #endif
