@@ -50,6 +50,11 @@ static u64_t thread_migrate_to_server(ipc_connection_t *conn, u64_t arg)
     regs->sp = (uintptr_t)conn->server_stack_top;
     regs->a0 = (uintptr_t)arg;
     regs->sepc = (uintptr_t)conn->target->server_ipc_config->callback;
+
+    void ret_from_exception();
+    // ipc_return sets context,  reset it
+    target->context.ra = (unsigned long)ret_from_exception;
+    target->context.sp = (unsigned long)regs;
     schedule_to(target);
     return 0;
 }

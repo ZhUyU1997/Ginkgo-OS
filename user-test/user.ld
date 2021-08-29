@@ -26,12 +26,14 @@ SECTIONS
         *(.data .data.*)
     }
 
-    .bss : {
+    /* move .bss to .data, avoid objcopy deleting it*/
+    .data : {
         . = ALIGN(16);
         *(.sbss .sbss.*) /* do not need to distinguish this from .bss */
         . = ALIGN(16);
         *(.bss .bss.*)
     }
 
-    PROVIDE(end = .);
+    PROVIDE(end = ALIGN(0x1000));
+    PROVIDE(__heap_start = ALIGN(0x1000));
 }

@@ -3,10 +3,25 @@
 #include <print.h>
 #include <string.h>
 
+#define SERVER_STACK_BASE 0x30000000UL
+#define SERVER_STACK_SIZE 0x1000UL
+#define SERVER_BUF_BASE 0x30400000UL
+#define SERVER_BUF_SIZE 0x1000UL
+#define CLIENT_BUF_BASE 0x30800000UL
+#define CLIENT_BUF_SIZE 0x1000UL
+#define MAX_CLIENT 16
+
 ipc_msg_t *ipc_create_msg(ipc_struct_t *icb, u64_t data_len, u64_t cap_slot_number)
 {
     ipc_msg_t *ipc_msg;
     int i;
+
+    if(sizeof(*ipc_msg) + data_len + sizeof(u64_t) * cap_slot_number > CLIENT_BUF_SIZE)
+    {
+        printf("Out of buf\n");
+        while(1);
+        return NULL;
+    }
 
     ipc_msg = (ipc_msg_t *)icb->shared_buf;
     ipc_msg->data_len = data_len;
@@ -24,6 +39,15 @@ ipc_msg_t *ipc_create_msg(ipc_struct_t *icb, u64_t data_len, u64_t cap_slot_numb
 char *ipc_get_msg_data(ipc_msg_t *ipc_msg)
 {
     return (char *)ipc_msg + ipc_msg->data_offset;
+}
+
+int ipc_clear_msg_data(ipc_msg_t *ipc_msg, u64_t offset, u64_t len)
+{
+    if (offset + len < offset || offset + len > ipc_msg->data_len)
+        return -1;
+
+    memset(ipc_get_msg_data(ipc_msg) + offset, 0, len);
+    return 0;
 }
 
 int ipc_set_msg_data(ipc_msg_t *ipc_msg, char *data, u64_t offset, u64_t len)
@@ -60,14 +84,6 @@ int ipc_destroy_msg(ipc_msg_t *ipc_msg)
 {
     return 0;
 }
-
-#define SERVER_STACK_BASE 0x30000000UL
-#define SERVER_STACK_SIZE 0x1000UL
-#define SERVER_BUF_BASE 0x30400000UL
-#define SERVER_BUF_SIZE 0x1000UL
-#define CLIENT_BUF_BASE 0x30800000UL
-#define CLIENT_BUF_SIZE 0x1000UL
-#define MAX_CLIENT 16
 
 int ipc_register_server(server_handler server_handler)
 {
@@ -131,15 +147,12 @@ int ipc_register_client_by_name(const char *name, ipc_struct_t *ipc_struct)
     return 0;
 }
 
-int ipc_call(ipc_struct_t *icb, ipc_msg_t *ipc_msg)
+u64_t ipc_call(ipc_struct_t *icb, ipc_msg_t *ipc_msg)
 {
-    u64_t ret = 0;
-    ret = usys_ipc_call(icb->conn_cap, (u64_t)ipc_msg);
-
-    return ret;
+    return usys_ipc_call(icb->conn_cap, (u64_t)ipc_msg);
 }
 
-void ipc_return(int ret)
+void ipc_return(u64_t ret)
 {
-    usys_ipc_return((u64_t)ret);
+    usys_ipc_return(ret);
 }

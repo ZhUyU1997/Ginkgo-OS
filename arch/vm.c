@@ -116,13 +116,19 @@ uint64 walk_addr(pagetable_t pagetable, uint64 va)
 
 int map_range_in_pgtbl(pagetable_t pagetable, vaddr_t va, paddr_t pa, size_t size, int perm)
 {
-    uint64 a, last;
-    pte_t *pte;
+    if ((va & PAGE_MASK) || (va & PAGE_MASK) || (size & PAGE_MASK))
+    {
+        PANIC("Invalid Map: [" $(va) " ~ " $(va + size - 1) "] => [" $(pa) " ~ " $(pa + size - 1) "]");
+        return -1;
+    }
 
-    a = PGROUNDDOWN(va);
-    last = PGROUNDDOWN(va + size - 1);
+    uint64 a = PGROUNDDOWN(va);
+    uint64 last = PGROUNDDOWN(va + size - 1);
+
     for (;;)
     {
+        pte_t *pte;
+
         if ((pte = walk(pagetable, a, 1)) == 0)
         {
             LOGE("walk(pagetable, a, 1)) == 0");
@@ -131,7 +137,7 @@ int map_range_in_pgtbl(pagetable_t pagetable, vaddr_t va, paddr_t pa, size_t siz
 
         if (*pte & PTE_V)
         {
-            LOGE("Remap!");
+            LOGE("Remap! [" $(va) " => " $(pa) "]");
         }
         *pte = PA2PTE(pa) | perm | PTE_V;
         if (a == last)

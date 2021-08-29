@@ -1,5 +1,7 @@
 #include <syscall.h>
 #include <string.h>
+#include <vfs.h>
+#include "ipc.h"
 
 #include "types.h"
 #include "print.h"
@@ -28,7 +30,7 @@ void test_vmo_map()
 void test_nanosleep()
 {
     printf("test_nanosleep:start\n");
-    usys_nanosleep(usys_deadline_after(1000000000));
+    usys_nanosleep(usys_deadline_after(100000000)); //100ms
     printf("test_nanosleep:end\n");
 }
 
@@ -42,12 +44,25 @@ void test_futex()
     printf("test_futex:end\n");
 }
 
+void test_vfs()
+{
+    do_vfs_init();
+    printf("test vfs\n");
+    int fd = vfs_open("/test.txt", O_RDONLY, S_IRWXU);
+    printf("fd:%d\n", fd);
+
+    char buf[50] = {};
+    size_t read_size = vfs_read(fd, buf, 50);
+    printf("read_size:%d buf:%s\n", read_size, buf);
+    printf("test vfs end\n");
+}
+
 int main(int argc, char **argv)
 {
-    printf("%d\n", argc);
-    printf("%p\n", argv);
-    printf("%s\n", argv[0]);
-    printf("%s\n", argv[1]);
+    printf("argc %d\n", argc);
+    printf("argv %p\n", argv);
+    printf("argv[0] %s\n", argv[0]);
+    printf("argv[1] %s\n", argv[1]);
 
     printf("main\n");
 
@@ -55,5 +70,6 @@ int main(int argc, char **argv)
     test_vmo_map();
     test_nanosleep();
     test_futex();
+    test_vfs();
     return 0;
 }

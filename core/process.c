@@ -109,7 +109,9 @@ static paddr_t load_binary(vmspace_t *vmspace, const char *file, vaddr_t addr)
 
 	vfs_read(fd, buf, st.st_size);
 
-	map_range_in_pgtbl(vmspace->pgtbl, addr, (paddr_t)buf, st.st_size, PTE_R | PTE_W | PTE_X | PTE_U);
+	map_range_in_pgtbl(vmspace->pgtbl, addr, (paddr_t)buf, page_num * PAGE_SIZE, PTE_R | PTE_W | PTE_X | PTE_U);
+    LOGD("User Space: [" $(addr) " ~ " $(addr + page_num * PAGE_SIZE - 1) "]");
+
 	return (paddr_t)addr;
 }
 
@@ -167,10 +169,11 @@ process_t *launch_user_init(process_t *parent, const char *filename)
 		return NULL;
 	}
 
-	vaddr_t ustack = (vaddr_t)alloc_page(1);
-	map_range_in_pgtbl(vmspace->pgtbl, ustack, ustack, PGSIZE, PTE_R | PTE_W | PTE_U);
+	int pagecount = 4;
+	vaddr_t ustack = (vaddr_t)alloc_page(pagecount);
+	map_range_in_pgtbl(vmspace->pgtbl, ustack, ustack, PGSIZE * pagecount, PTE_R | PTE_W | PTE_U);
 
-	vaddr_t sp = prepare_env(ustack + PGSIZE);
+	vaddr_t sp = prepare_env(ustack + PGSIZE * pagecount);
 	thread_t *thread = thread_create(process, (void *)sp, (void *)pc, NULL);
 
 	struct pt_regs *regs = (struct pt_regs *)(current->thread_info.kernel_sp - sizeof(struct pt_regs));
@@ -181,6 +184,7 @@ process_t *launch_user_init(process_t *parent, const char *filename)
 }
 
 static process_t *root;
+extern void do_user_block_init(const char *dev);
 
 void do_user_init()
 {
@@ -189,9 +193,11 @@ void do_user_init()
 	slot_alloc_install(root, root);
 	slot_alloc_install(root, vmspace);
 
+	do_user_block_init("virtio-block");
+
 	vfs_mount("virtio-block", "/", "cpio", MOUNT_RO);
 	launch_user_init(root, "/idle");
+	launch_user_init(root, "/vfs_server");
 	launch_user_init(root, "/test");
-	// launch_user_init(root, "/vfs_server");
 	// launch_user_init(root, "/test_vfs");
 }

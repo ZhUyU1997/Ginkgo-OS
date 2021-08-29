@@ -36,3 +36,8 @@ SYSFUNC_DEF(deadline_after);
 SYSFUNC_DEF(yield);
 SYSFUNC_DEF(futex_wait);
 SYSFUNC_DEF(futex_wake);
+SYSFUNC_DEF(block_read);
+SYSFUNC_DEF(block_write);
+SYSFUNC_DEF(block_capacity);
+SYSFUNC_DEF(block_size);
+SYSFUNC_DEF(block_count);

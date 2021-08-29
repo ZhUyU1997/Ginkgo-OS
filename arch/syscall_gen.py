@@ -26,6 +26,12 @@ syscall_table = [
     "yield",
     "futex_wait",
     "futex_wake",
+    # private syscall
+    "block_read",
+    "block_write",
+    "block_capacity",
+    "block_size",
+    "block_count",
 ]
 
 print("#pragma once")
@@ -34,13 +40,13 @@ for k, v in enumerate(syscall_table):
     print(f"#define __NR_{v} {k}")
 
 print(f"#define __NR_syscalls {len(syscall_table)}")
-print();
+print()
 print("#ifdef SYSCALL_IMPL")
-print();
+print()
 for k, v in enumerate(syscall_table):
     print(f"extern void sys_{v}();")
 
-print();
+print()
 
 print("void *sys_call_table[__NR_syscalls] = {")
 for k, v in enumerate(syscall_table):
@@ -48,4 +54,3 @@ for k, v in enumerate(syscall_table):
 print("};")
 
 print("#endif")
-

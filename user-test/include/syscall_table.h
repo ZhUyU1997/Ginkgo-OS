@@ -24,7 +24,12 @@
 #define __NR_yield 22
 #define __NR_futex_wait 23
 #define __NR_futex_wake 24
-#define __NR_syscalls 25
+#define __NR_block_read 25
+#define __NR_block_write 26
+#define __NR_block_capacity 27
+#define __NR_block_size 28
+#define __NR_block_count 29
+#define __NR_syscalls 30
 
 #ifdef SYSCALL_IMPL
 
@@ -53,6 +58,11 @@ extern void sys_deadline_after();
 extern void sys_yield();
 extern void sys_futex_wait();
 extern void sys_futex_wake();
+extern void sys_block_read();
+extern void sys_block_write();
+extern void sys_block_capacity();
+extern void sys_block_size();
+extern void sys_block_count();
 
 void *sys_call_table[__NR_syscalls] = {
 	[__NR_ni_syscall] = sys_ni_syscall,
@@ -80,5 +90,10 @@ void *sys_call_table[__NR_syscalls] = {
 	[__NR_yield] = sys_yield,
 	[__NR_futex_wait] = sys_futex_wait,
 	[__NR_futex_wake] = sys_futex_wake,
+	[__NR_block_read] = sys_block_read,
+	[__NR_block_write] = sys_block_write,
+	[__NR_block_capacity] = sys_block_capacity,
+	[__NR_block_size] = sys_block_size,
+	[__NR_block_count] = sys_block_count,
 };
 #endif

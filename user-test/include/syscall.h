@@ -31,7 +31,7 @@ u64_t usys_register_server(u64_t callback, u64_t max_client, u64_t vm_config_ptr
 u64_t usys_register_named_server(const char *name, u64_t callback, u64_t max_client, u64_t vm_config_ptr);
 u32_t usys_register_client(u32_t server_cap, u64_t vm_config_ptr);
 u32_t usys_register_client_by_name(const char *name, u64_t vm_config_ptr);
-u32_t usys_ipc_call(u64_t icb, u64_t ipc_msg);
+u64_t usys_ipc_call(u64_t icb, u64_t ipc_msg);
 void usys_ipc_return(u64_t ret);
 
 typedef union
@@ -56,3 +56,8 @@ ktime_t usys_deadline_after(kduration_t nanoseconds);
 void usys_yield();
 int usys_futex_wait(u32_t *uaddr, u32_t val);
 int usys_futex_wake(u32_t *uaddr);
+u64_t usys_block_read(u8_t *buf, u64_t offset, u64_t count);
+u64_t usys_block_write(u8_t *buf, u64_t offset, u64_t count);
+u64_t usys_block_capacity();
+u64_t usys_block_size();
+u64_t usys_block_count();

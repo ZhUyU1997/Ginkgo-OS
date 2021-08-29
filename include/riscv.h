@@ -92,6 +92,7 @@ static inline void local_flush_tlb_page(unsigned long addr)
 #define PGSHIFT 12  // bits of offset within a page
 #define PAGE_SIZE 4096
 #define PAGE_SHIFT 12
+#define PAGE_MASK (PGSIZE - 1)
 
 #define PGROUNDUP(sz) (((sz) + PGSIZE - 1) & ~(PGSIZE - 1))
 #define PGROUNDDOWN(a) (((a)) & ~(PGSIZE - 1))
