@@ -12,6 +12,6 @@ size_t fwrite(const void *buf, size_t size, size_t count, FILE *f)
 	if (request == 0)
 		return 0;
 
-	written = __stdio_write(f, buf, size);
+	written = __stdio_write(f, buf, request);
 	return written == request ? count : written / size;
 }

@@ -12,6 +12,6 @@ size_t fread(void *buf, size_t size, size_t count, FILE *f)
 	if (bytes_requested == 0)
 		return 0;
 
-	bytes_read = __stdio_read(f, buf, size);
+	bytes_read = __stdio_read(f, buf, bytes_requested);
 	return bytes_read == bytes_requested ? count : bytes_read / size;
 }
