@@ -19,7 +19,8 @@ typedef enum
 
 typedef s32_t status_t; // for syscall
 
-void usys_putc(char c);
+void usys_console_putc(char c);
+size_t usys_console_puts(const char *buf, size_t size);
 int usys_process_create();
 void usys_process_exit(int);
 

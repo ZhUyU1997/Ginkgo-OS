@@ -98,7 +98,7 @@ u32_t sys_register_client_by_name(const char *name, u64_t vm_config_ptr)
 
     if (server == NULL)
     {
-        LOGE("Unable to fine named server(" $(name) ")");
+        LOGE("Unable to find named server(" $(name) ")");
         return 0;
     }
 

@@ -262,7 +262,7 @@ out:
 void do_futex_init()
 {
     futex_hashsize = roundup_pow_of_two(256 * CONFIG_CPU);
-    futex_queues = malloc(sizeof(struct hlist_head) * futex_hashsize);
+    futex_queues = malloc(sizeof(struct futex_hash_bucket) * futex_hashsize);
 
     for (int i = 0; i < futex_hashsize; i++)
     {

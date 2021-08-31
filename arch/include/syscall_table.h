@@ -1,40 +1,42 @@
 #pragma once
 #define __NR_ni_syscall 0
-#define __NR_putc 1
-#define __NR_process_create 2
-#define __NR_process_exit 3
-#define __NR_thread_create 4
-#define __NR_thread_exit 5
-#define __NR_vmo_create 6
-#define __NR_vmo_write 7
-#define __NR_vmo_read 8
-#define __NR_vmo_map 9
-#define __NR_register_server 10
-#define __NR_register_named_server 11
-#define __NR_register_client 12
-#define __NR_register_client_by_name 13
-#define __NR_ipc_call 14
-#define __NR_ipc_return 15
-#define __NR_nanosleep 16
-#define __NR_clock_get 17
-#define __NR_clock_get_monotonic 18
-#define __NR_ticks_get 19
-#define __NR_ticks_per_second 20
-#define __NR_deadline_after 21
-#define __NR_yield 22
-#define __NR_futex_wait 23
-#define __NR_futex_wake 24
-#define __NR_block_read 25
-#define __NR_block_write 26
-#define __NR_block_capacity 27
-#define __NR_block_size 28
-#define __NR_block_count 29
-#define __NR_syscalls 30
+#define __NR_console_putc 1
+#define __NR_console_puts 2
+#define __NR_process_create 3
+#define __NR_process_exit 4
+#define __NR_thread_create 5
+#define __NR_thread_exit 6
+#define __NR_vmo_create 7
+#define __NR_vmo_write 8
+#define __NR_vmo_read 9
+#define __NR_vmo_map 10
+#define __NR_register_server 11
+#define __NR_register_named_server 12
+#define __NR_register_client 13
+#define __NR_register_client_by_name 14
+#define __NR_ipc_call 15
+#define __NR_ipc_return 16
+#define __NR_nanosleep 17
+#define __NR_clock_get 18
+#define __NR_clock_get_monotonic 19
+#define __NR_ticks_get 20
+#define __NR_ticks_per_second 21
+#define __NR_deadline_after 22
+#define __NR_yield 23
+#define __NR_futex_wait 24
+#define __NR_futex_wake 25
+#define __NR_block_read 26
+#define __NR_block_write 27
+#define __NR_block_capacity 28
+#define __NR_block_size 29
+#define __NR_block_count 30
+#define __NR_syscalls 31
 
 #ifdef SYSCALL_IMPL
 
 extern void sys_ni_syscall();
-extern void sys_putc();
+extern void sys_console_putc();
+extern void sys_console_puts();
 extern void sys_process_create();
 extern void sys_process_exit();
 extern void sys_thread_create();
@@ -66,7 +68,8 @@ extern void sys_block_count();
 
 void *sys_call_table[__NR_syscalls] = {
 	[__NR_ni_syscall] = sys_ni_syscall,
-	[__NR_putc] = sys_putc,
+	[__NR_console_putc] = sys_console_putc,
+	[__NR_console_puts] = sys_console_puts,
 	[__NR_process_create] = sys_process_create,
 	[__NR_process_exit] = sys_process_exit,
 	[__NR_thread_create] = sys_thread_create,

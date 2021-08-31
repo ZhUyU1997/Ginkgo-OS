@@ -33,7 +33,52 @@ void do_timer_init()
 
     csr_write(mscratch, (uint64)&timer_scratch[id]);
     csr_write(mtvec, (uint64)timer_vector); // set the machine-mode trap handler.
-    csr_set(mie, MIE_MTIE); // enable machine-mode timer interrupts.
+    csr_set(mie, MIE_MTIE);                 // enable machine-mode timer interrupts.
+}
+
+static const char * get_scause_info(uint64 scause)
+{
+    if (scause == 0)
+        return ("Instruction address misaligned");
+    else if (scause == 1)
+        return ("Instruction access fault");
+    else if (scause == 2)
+        return("Illegal instruction");
+    else if (scause == 3)
+        return("Breakpoint");
+    else if (scause == 4)
+        return("Load address misaligned");
+    else if (scause == 5)
+        return("Load access fault");
+    else if (scause == 6)
+        return("Store/AMO address misaligned");
+    else if (scause == 7)
+        return("Store/AMO access fault");
+    else if (scause == 8)
+        return("Environment call from U-mode");
+    else if (scause == 9)
+        return("Environment call from S-mode");
+    else if (scause == 10 || scause == 11)
+        return("Reserved for future standard use");
+    else if (scause == 12)
+        return("Instruction page fault");
+    else if (scause == 13)
+        return("Load page fault");
+    else if (scause == 14)
+        return("Reserved for future standard use");
+    else if (scause == 15)
+        return("Store/AMO page fault");
+    else if ((scause >= 16) && (scause <= 23))
+        return("Reserved for future standard use");
+    else if ((scause >= 24) && (scause <= 31))
+        return("Reserved for custom use");
+    else if ((scause >= 32) && (scause <= 47))
+        return("Reserved for future standard use");
+    else if ((scause >= 48) && (scause <= 63))
+        return("Reserved for custom use");
+    else if (scause >= 64)
+        return("Reserved for future standard use");
+    return "";
 }
 
 void do_IRQ(struct pt_regs *regs)
@@ -93,10 +138,13 @@ void do_IRQ(struct pt_regs *regs)
         {
             unsigned long spec = csr_read(sepc);
             unsigned long stval = csr_read(stval);
-            PANIC(
-                "scause:" $(scause) "\n",
-                "sepc: " $(spec) "\n",
-                "stval: " $(stval) "\n");
+
+            printv("scause:" $(scause) "\n");
+            printv("sepc: " $(spec) "\n");
+            printv("stval: " $(stval) "\n");
+            printv("Exception Description: " $(get_scause_info(scause)) "\n");
+            while (1)
+                ;
             break;
         }
         }

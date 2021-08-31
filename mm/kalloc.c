@@ -12,7 +12,7 @@
 static buddy_system_t *system = NULL;
 static mem_pool_control_t *control = &(mem_pool_control_t){};
 
-extern char end[];
+extern char __end[];
 
 void *alloc_page(size_t count)
 {
@@ -66,6 +66,6 @@ void *realloc(void *old, size_t size)
 
 void do_mem_init()
 {
-    system = buddy_create(end, (size_t)PHYSTOP - (size_t)end);
+    system = buddy_create(__end, (size_t)PHYSTOP - (size_t)__end);
     mem_pool_create(control, system);
 }

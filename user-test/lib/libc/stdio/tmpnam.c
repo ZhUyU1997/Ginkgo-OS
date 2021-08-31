@@ -4,7 +4,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <vfs/vfs.h>
+#include <vfs.h>
+#include <string.h>
 
 char * tmpnam(char * buf)
 {

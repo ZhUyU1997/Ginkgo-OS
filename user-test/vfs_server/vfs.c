@@ -2,6 +2,27 @@
 #include <atomic.h>
 #include <string.h>
 #include <malloc.h>
+#include <stdio.h>
+
+#define ipc_vfs_open vfs_open
+#define ipc_vfs_close vfs_close
+#define ipc_vfs_read vfs_read
+#define ipc_vfs_write vfs_write
+#define ipc_vfs_lseek vfs_lseek
+#define ipc_vfs_fsync vfs_fsync
+#define ipc_vfs_fchmod vfs_fchmod
+#define ipc_vfs_fstat vfs_fstat
+#define ipc_vfs_opendir vfs_opendir
+#define ipc_vfs_closedir vfs_closedir
+#define ipc_vfs_readdir vfs_readdir
+#define ipc_vfs_rewinddir vfs_rewinddir
+#define ipc_vfs_mkdir vfs_mkdir
+#define ipc_vfs_rmdir vfs_rmdir
+#define ipc_vfs_rename vfs_rename
+#define ipc_vfs_unlink vfs_unlink
+#define ipc_vfs_access vfs_access
+#define ipc_vfs_chmod vfs_chmod
+#define ipc_vfs_stat vfs_stat
 
 struct list_head __filesystem_list = {
 	.next = &__filesystem_list,
@@ -1562,10 +1583,116 @@ int vfs_stat(const char * path, struct vfs_stat_t * st)
 	return err;
 }
 
+u64_t fs_dispatch(struct fs_request *fr)
+{
+    switch (fr->req)
+    {
+    case VFS_OPEN:
+    {
+        GET_FS_REQUEST(param, VFS_OPEN, fr);
+        return vfs_open(param->path, param->flags, param->mode);
+    }
+    case VFS_CLOSE:
+    {
+        GET_FS_REQUEST(param, VFS_CLOSE, fr);
+        return vfs_close(param->fd);
+    }
+    case VFS_READ:
+    {
+        GET_FS_REQUEST(param, VFS_READ, fr);
+        return vfs_read(param->fd, param->buf, param->len);
+    }
+    case VFS_WRITE:
+    {
+        GET_FS_REQUEST(param, VFS_WRITE, fr);
+        return vfs_write(param->fd, param->buf, param->len);
+    }
+    case VFS_LSEEK:
+    {
+        GET_FS_REQUEST(param, VFS_LSEEK, fr);
+        return vfs_lseek(param->fd, param->off, param->whence);
+    }
+    case VFS_FSYNC:
+    {
+        GET_FS_REQUEST(param, VFS_FSYNC, fr);
+        return vfs_fsync(param->fd);
+    }
+    case VFS_FCHMOD:
+    {
+        GET_FS_REQUEST(param, VFS_FCHMOD, fr);
+        return vfs_fchmod(param->fd, param->mode);
+    }
+    case VFS_FSTAT:
+    {
+        GET_FS_REQUEST(param, VFS_FSTAT, fr);
+        return vfs_fstat(param->fd, &param->st);
+    }
+    case VFS_OPENDIR:
+    {
+        GET_FS_REQUEST(param, VFS_OPENDIR, fr);
+        return vfs_opendir(param->name);
+    }
+    case VFS_CLOSEDIR:
+    {
+        GET_FS_REQUEST(param, VFS_CLOSEDIR, fr);
+        return vfs_closedir(param->fd);
+    }
+    case VFS_READDIR:
+    {
+        GET_FS_REQUEST(param, VFS_READDIR, fr);
+        return vfs_readdir(param->fd, &param->dir);
+    }
+    case VFS_REWINDDIR:
+    {
+        GET_FS_REQUEST(param, VFS_REWINDDIR, fr);
+        return vfs_rewinddir(param->fd);
+    }
+    case VFS_MKDIR:
+    {
+        GET_FS_REQUEST(param, VFS_MKDIR, fr);
+        return vfs_mkdir(param->path, param->mode);
+    }
+    case VFS_RMDIR:
+    {
+        GET_FS_REQUEST(param, VFS_RMDIR, fr);
+        return vfs_rmdir(param->path);
+    }
+    case VFS_RENAME:
+    {
+        GET_FS_REQUEST(param, VFS_RENAME, fr);
+        return vfs_rename(param->src, param->dst);
+    }
+    case VFS_UNLINK:
+    {
+        GET_FS_REQUEST(param, VFS_UNLINK, fr);
+        return vfs_unlink(param->path);
+    }
+    case VFS_ACCESS:
+    {
+        GET_FS_REQUEST(param, VFS_ACCESS, fr);
+        return vfs_access(param->path, param->mode);
+    }
+    case VFS_CHMOD:
+    {
+        GET_FS_REQUEST(param, VFS_CHMOD, fr);
+        return vfs_chmod(param->path, param->mode);
+    }
+    case VFS_STAT:
+    {
+        GET_FS_REQUEST(param, VFS_STAT, fr);
+        return vfs_stat(param->path, &param->st);
+    }
+    default:
+        break;
+    }
+    printf("Exception req:%d\n", fr->req);
+    return -1;
+}
+
 void do_vfs_init(void)
 {
 	int i;
-
+	printf("[vfs server]\n");
 	init_list_head(&mnt_list);
 	mutex_init(&mnt_list_lock);
 

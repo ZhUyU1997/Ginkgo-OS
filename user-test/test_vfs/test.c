@@ -1,9 +1,9 @@
 #include <syscall.h>
 #include <string.h>
 
-#include "types.h"
-#include "print.h"
-#include "ipc.h"
+#include <types.h>
+#include <stdio.h>
+#include <ipc.h>
 
 int main(int argc, char **argv)
 {

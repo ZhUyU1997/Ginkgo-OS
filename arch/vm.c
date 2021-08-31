@@ -137,7 +137,7 @@ int map_range_in_pgtbl(pagetable_t pagetable, vaddr_t va, paddr_t pa, size_t siz
 
         if (*pte & PTE_V)
         {
-            LOGE("Remap! [" $(va) " => " $(pa) "]");
+            LOGE("Remap! [" $(a) " => " $(pa) "]");
         }
         *pte = PA2PTE(pa) | perm | PTE_V;
         if (a == last)

@@ -169,7 +169,7 @@ process_t *launch_user_init(process_t *parent, const char *filename)
 		return NULL;
 	}
 
-	int pagecount = 4;
+	int pagecount = 16;
 	vaddr_t ustack = (vaddr_t)alloc_page(pagecount);
 	map_range_in_pgtbl(vmspace->pgtbl, ustack, ustack, PGSIZE * pagecount, PTE_R | PTE_W | PTE_U);
 

@@ -22,7 +22,7 @@ static inline void mutex_unlock(struct mutex_t *m)
 
 struct mutex_guard_t
 {
-    struct mutex_t *m
+    struct mutex_t *m;
 };
 
 #define mutex_guard(name, mutex) struct mutex_guard_t __attribute__((cleanup(mutex_auto_unlock), unused)) name = {.m = mutex}

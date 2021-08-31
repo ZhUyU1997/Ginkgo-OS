@@ -1,10 +1,9 @@
 #include <syscall.h>
 #include <string.h>
 #include <vfs.h>
-#include "ipc.h"
-
-#include "types.h"
-#include "print.h"
+#include <ipc.h>
+#include <types.h>
+#include <stdio.h>
 
 void test_vmo()
 {
@@ -46,7 +45,6 @@ void test_futex()
 
 void test_vfs()
 {
-    do_vfs_init();
     printf("test vfs\n");
     int fd = vfs_open("/test.txt", O_RDONLY, S_IRWXU);
     printf("fd:%d\n", fd);
@@ -55,6 +53,18 @@ void test_vfs()
     size_t read_size = vfs_read(fd, buf, 50);
     printf("read_size:%d buf:%s\n", read_size, buf);
     printf("test vfs end\n");
+}
+
+void test_stdio()
+{
+    printf("test stdio\n");
+    FILE *f = fopen("/test.txt", "r");
+    printf("f:%p\n", f);
+
+    char buf[50] = {};
+    size_t count = fread(buf, 1, 50, f);
+    printf("count:%d buf:%s\n", count, buf);
+    printf("test stdio end\n");
 }
 
 int main(int argc, char **argv)
@@ -71,5 +81,6 @@ int main(int argc, char **argv)
     test_nanosleep();
     test_futex();
     test_vfs();
+    test_stdio();
     return 0;
 }

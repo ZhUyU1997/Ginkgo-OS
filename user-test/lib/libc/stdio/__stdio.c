@@ -2,8 +2,11 @@
  * libc/stdio/__stdio.c
  */
 
-#include <console/console.h>
+// #include <console/console.h>
 #include <stdio.h>
+#include <malloc.h>
+#include <vfs.h>
+#include <syscall.h>
 
 static FILE * __stdin = NULL;
 static FILE * __stdout = NULL;
@@ -11,17 +14,20 @@ static FILE * __stderr = NULL;
 
 static ssize_t __tty_stdin_read(FILE * f, unsigned char * buf, size_t size)
 {
-	return console_stdin_read(buf, size);
+	// return console_stdin_read(buf, size);
+	return 0;
 }
 
 static ssize_t __tty_stdout_write(FILE * f, const unsigned char * buf, size_t size)
 {
-	return console_stdout_write(buf, size);
+	// return console_stdout_write(buf, size);
+	return usys_console_puts(buf, size);
 }
 
 static ssize_t __tty_stderr_write(FILE * f, const unsigned char * buf, size_t size)
 {
-	return console_stderr_write(buf, size);
+	// return console_stderr_write(buf, size);
+	return 0;
 }
 
 static ssize_t __tty_null_read(FILE * f, unsigned char * buf, size_t size)

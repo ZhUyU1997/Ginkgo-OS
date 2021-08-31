@@ -50,39 +50,149 @@ void * memchr(const void * s, int c, size_t n);
 void * memscan(void * addr, int c, size_t size);
 int memcmp(const void * s1, const void * s2, size_t n);
 
+#if defined(__alpha__) || defined(__ia64__) || defined(__x86_64__) || defined(_WIN64) || defined(__LP64__) || defined(__LLP64__)
+#define BITS_PER_LONG 64
+#endif
+
+#define __always_inline inline __attribute__ ((__always_inline__))
+
 /*
  * ffs - find first (least-significant) bit set
  */
-static inline __attribute__((always_inline)) int ffs(int x)
+static __always_inline int ffs(int x)
 {
-	return __builtin_ffs(x);
+	int r = 1;
+
+	if (!x)
+		return 0;
+	if (!(x & 0xffff)) {
+		x >>= 16;
+		r += 16;
+	}
+	if (!(x & 0xff)) {
+		x >>= 8;
+		r += 8;
+	}
+	if (!(x & 0xf)) {
+		x >>= 4;
+		r += 4;
+	}
+	if (!(x & 3)) {
+		x >>= 2;
+		r += 2;
+	}
+	if (!(x & 1)) {
+		x >>= 1;
+		r += 1;
+	}
+	return r;
 }
 
 /*
  * fls - find last (most-significant) bit set
  * Note fls(0) = 0, fls(1) = 1, fls(0x80000000) = 32.
  */
-static inline __attribute__((always_inline)) int fls(int x)
+static __always_inline int fls(unsigned int x)
 {
-	return x ? sizeof(x) * 8 - __builtin_clz(x) : 0;
+	int r = 32;
+
+	if (!x)
+		return 0;
+	if (!(x & 0xffff0000u)) {
+		x <<= 16;
+		r -= 16;
+	}
+	if (!(x & 0xff000000u)) {
+		x <<= 8;
+		r -= 8;
+	}
+	if (!(x & 0xf0000000u)) {
+		x <<= 4;
+		r -= 4;
+	}
+	if (!(x & 0xc0000000u)) {
+		x <<= 2;
+		r -= 2;
+	}
+	if (!(x & 0x80000000u)) {
+		x <<= 1;
+		r -= 1;
+	}
+	return r;
 }
 
-/*
+/**
  * __ffs - find first bit in word.
+ * @word: The word to search
+ *
  * Undefined if no bit exists, so code should check against 0 first.
  */
-static inline __attribute__((always_inline)) unsigned long __ffs(unsigned long word)
+static __always_inline unsigned long __ffs(unsigned long word)
 {
-	return __builtin_ctzl(word);
+	int num = 0;
+
+#if BITS_PER_LONG == 64
+	if ((word & 0xffffffff) == 0) {
+		num += 32;
+		word >>= 32;
+	}
+#endif
+	if ((word & 0xffff) == 0) {
+		num += 16;
+		word >>= 16;
+	}
+	if ((word & 0xff) == 0) {
+		num += 8;
+		word >>= 8;
+	}
+	if ((word & 0xf) == 0) {
+		num += 4;
+		word >>= 4;
+	}
+	if ((word & 0x3) == 0) {
+		num += 2;
+		word >>= 2;
+	}
+	if ((word & 0x1) == 0)
+		num += 1;
+	return num;
 }
 
-/*
+/**
  * __fls - find last (most-significant) set bit in a long word
+ * @word: the word to search
+ *
  * Undefined if no set bit exists, so code should check against 0 first.
  */
-static inline __attribute__((always_inline)) unsigned long __fls(unsigned long word)
+static __always_inline unsigned long __fls(unsigned long word)
 {
-	return (sizeof(word) * 8) - 1 - __builtin_clzl(word);
+	int num = BITS_PER_LONG - 1;
+
+#if BITS_PER_LONG == 64
+	if (!(word & (~0ul << 32))) {
+		num -= 32;
+		word <<= 32;
+	}
+#endif
+	if (!(word & (~0ul << (BITS_PER_LONG-16)))) {
+		num -= 16;
+		word <<= 16;
+	}
+	if (!(word & (~0ul << (BITS_PER_LONG-8)))) {
+		num -= 8;
+		word <<= 8;
+	}
+	if (!(word & (~0ul << (BITS_PER_LONG-4)))) {
+		num -= 4;
+		word <<= 4;
+	}
+	if (!(word & (~0ul << (BITS_PER_LONG-2)))) {
+		num -= 2;
+		word <<= 2;
+	}
+	if (!(word & (~0ul << (BITS_PER_LONG-1))))
+		num -= 1;
+	return num;
 }
 
 #ifdef __cplusplus

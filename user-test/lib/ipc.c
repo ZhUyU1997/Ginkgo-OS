@@ -1,14 +1,14 @@
 #include <ipc.h>
 #include <syscall.h>
-#include <print.h>
+#include <stdio.h>
 #include <string.h>
 
 #define SERVER_STACK_BASE 0x30000000UL
-#define SERVER_STACK_SIZE 0x1000UL
+#define SERVER_STACK_SIZE 0x4000UL
 #define SERVER_BUF_BASE 0x30400000UL
-#define SERVER_BUF_SIZE 0x1000UL
+#define SERVER_BUF_SIZE 0x4000UL
 #define CLIENT_BUF_BASE 0x30800000UL
-#define CLIENT_BUF_SIZE 0x1000UL
+#define CLIENT_BUF_SIZE 0x4000UL
 #define MAX_CLIENT 16
 
 ipc_msg_t *ipc_create_msg(ipc_struct_t *icb, u64_t data_len, u64_t cap_slot_number)

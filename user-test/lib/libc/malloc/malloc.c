@@ -899,6 +899,7 @@ void do_init_mem(void)
     int slot = usys_vmo_create(heap_size, VMO_DATA);
     usys_vmo_map(0, slot, (u64_t)&__heap_start, VM_READ | VM_WRITE, 0);
     memset(&__heap_start, 0, heap_size);
-    printf("alloc HEAP: [%x ~ %x]\n", (u64_t)&__heap_start, (u64_t)&__heap_start + heap_size - 1);
+    // printf doesn't work for now
+    // printf("alloc HEAP: [%x ~ %x]\n", (u64_t)&__heap_start, (u64_t)&__heap_start + heap_size - 1);
     __heap_pool = mm_create((void *)&__heap_start, heap_size);
 }

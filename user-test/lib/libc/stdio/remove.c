@@ -3,7 +3,7 @@
  */
 
 #include <stdio.h>
-#include <vfs/vfs.h>
+#include <vfs.h>
 
 int remove(const char * path)
 {

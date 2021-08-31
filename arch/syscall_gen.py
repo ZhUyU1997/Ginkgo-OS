@@ -2,7 +2,8 @@
 
 syscall_table = [
     "ni_syscall",
-    "putc",
+    "console_putc",
+    "console_puts",
     "process_create",
     "process_exit",
     "thread_create",

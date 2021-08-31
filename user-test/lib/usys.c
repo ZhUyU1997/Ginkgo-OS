@@ -14,7 +14,8 @@
         ".type	" #name ",	@function \n\t" \
 	    ".size " #name", .-"#name "\n\t")
 
-SYSFUNC_DEF(putc);
+SYSFUNC_DEF(console_putc);
+SYSFUNC_DEF(console_puts);
 SYSFUNC_DEF(process_create);
 SYSFUNC_DEF(process_exit);
 SYSFUNC_DEF(vmo_create);

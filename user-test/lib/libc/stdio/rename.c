@@ -3,7 +3,7 @@
  */
 
 #include <stdio.h>
-#include <vfs/vfs.h>
+#include <vfs.h>
 
 int rename(const char * old, const char * new)
 {

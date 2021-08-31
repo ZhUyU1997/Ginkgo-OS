@@ -4,18 +4,14 @@
 
 #include <stdio.h>
 
-size_t fwrite(const void * buf, size_t size, size_t count, FILE * f)
+size_t fwrite(const void *buf, size_t size, size_t count, FILE *f)
 {
-	const unsigned char * p = buf;
-	size_t i;
+	size_t request = size * count;
+	size_t written;
 
-	for(i = 0; i < count; i++)
-	{
-		if(__stdio_write(f, p, size) != size)
-			break;
+	if (request == 0)
+		return 0;
 
-		p += size;
-	}
-
-	return i;
+	written = __stdio_write(f, buf, size);
+	return written == request ? count : written / size;
 }

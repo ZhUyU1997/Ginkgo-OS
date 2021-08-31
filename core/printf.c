@@ -2,8 +2,8 @@
 
 #include <stdarg.h>
 
-extern void print(const char *buf);
-extern void print_char(u8_t c);
+extern void serial_lowlevel_puts(const char *buf);
+extern void serial_lowlevel_putc(u8_t c);
 
 static char digits[] = "0123456789abcdef";
 
@@ -28,16 +28,16 @@ static void printint(int xx, int base, int sign)
         buf[i++] = '-';
 
     while (--i >= 0)
-        print_char(buf[i]);
+        serial_lowlevel_putc(buf[i]);
 }
 
 static void printptr(uint64 x)
 {
     int i;
-    print_char('0');
-    print_char('x');
+    serial_lowlevel_putc('0');
+    serial_lowlevel_putc('x');
     for (i = 0; i < (sizeof(uint64) * 2); i++, x <<= 4)
-        print_char(digits[x >> (sizeof(uint64) * 8 - 4)]);
+        serial_lowlevel_putc(digits[x >> (sizeof(uint64) * 8 - 4)]);
 }
 
 // Print to the console. only understands %d, %x, %p, %s.
@@ -49,7 +49,7 @@ void printf(char *fmt, ...)
 
     if (fmt == 0)
     {
-        print("null fmt");
+        serial_lowlevel_puts("null fmt");
         while (1)
             ;
     }
@@ -59,7 +59,7 @@ void printf(char *fmt, ...)
     {
         if (c != '%')
         {
-            print_char(c);
+            serial_lowlevel_putc(c);
             continue;
         }
         c = fmt[++i] & 0xff;
@@ -80,15 +80,15 @@ void printf(char *fmt, ...)
             if ((s = va_arg(ap, char *)) == 0)
                 s = "(null)";
             for (; *s; s++)
-                print_char(*s);
+                serial_lowlevel_putc(*s);
             break;
         case '%':
-            print_char('%');
+            serial_lowlevel_putc('%');
             break;
         default:
             // Print unknown % sequence to draw attention.
-            print_char('%');
-            print_char(c);
+            serial_lowlevel_putc('%');
+            serial_lowlevel_putc(c);
             break;
         }
     }

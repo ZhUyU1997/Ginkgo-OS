@@ -1,6 +1,7 @@
 #include <vfs.h>
 #include <ipc.h>
 #include <string.h>
+#include <stdio.h>
 
 static ipc_struct_t *vfs_client_ipc = &(ipc_struct_t){};
 
@@ -293,5 +294,6 @@ int vfs_stat(const char *path, struct vfs_stat_t *st)
 
 void do_vfs_init(void)
 {
+    printf("[vfs client]\n");
     ipc_register_client_by_name("vfs", vfs_client_ipc);
 }
