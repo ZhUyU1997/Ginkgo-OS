@@ -37,7 +37,7 @@ static int create_connection(thread_t *source, thread_t *target, struct ipc_vm_c
     struct server_ipc_config *server_ipc_config = target->server_ipc_config;
     struct ipc_vm_config *server_vm_config = &server_ipc_config->vm_config;
     //TODO:
-    int conn_idx = ffs(~server_ipc_config->conn_bmp);
+    int conn_idx = ffs(server_ipc_config->conn_bmp);
     LOGI("idx:" $(conn_idx));
     server_ipc_config->conn_bmp |= 1UL << conn_idx;
 
