@@ -13,9 +13,9 @@ typedef enum
     VMO_DEVICE = 5,     /* memory mapped device registers */
 } vmo_type_t;
 
-#define VM_READ  (1 << 0)
+#define VM_READ (1 << 0)
 #define VM_WRITE (1 << 1)
-#define VM_EXEC  (1 << 2)
+#define VM_EXEC (1 << 2)
 
 typedef s32_t status_t; // for syscall
 
@@ -62,3 +62,7 @@ u64_t usys_block_write(u8_t *buf, u64_t offset, u64_t count);
 u64_t usys_block_capacity();
 u64_t usys_block_size();
 u64_t usys_block_count();
+
+u64_t usys_framebuffer_create(u64_t addr);
+void usys_framebuffer_get_info(uint32_t *width, uint32_t *height, uint32_t *stride);
+void usys_framebuffer_present();

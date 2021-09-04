@@ -30,7 +30,10 @@
 #define __NR_block_capacity 28
 #define __NR_block_size 29
 #define __NR_block_count 30
-#define __NR_syscalls 31
+#define __NR_framebuffer_create 31
+#define __NR_framebuffer_get_info 32
+#define __NR_framebuffer_present 33
+#define __NR_syscalls 34
 
 #ifdef SYSCALL_IMPL
 
@@ -65,6 +68,9 @@ extern void sys_block_write();
 extern void sys_block_capacity();
 extern void sys_block_size();
 extern void sys_block_count();
+extern void sys_framebuffer_create();
+extern void sys_framebuffer_get_info();
+extern void sys_framebuffer_present();
 
 void *sys_call_table[__NR_syscalls] = {
 	[__NR_ni_syscall] = sys_ni_syscall,
@@ -98,5 +104,8 @@ void *sys_call_table[__NR_syscalls] = {
 	[__NR_block_capacity] = sys_block_capacity,
 	[__NR_block_size] = sys_block_size,
 	[__NR_block_count] = sys_block_count,
+	[__NR_framebuffer_create] = sys_framebuffer_create,
+	[__NR_framebuffer_get_info] = sys_framebuffer_get_info,
+	[__NR_framebuffer_present] = sys_framebuffer_present,
 };
 #endif

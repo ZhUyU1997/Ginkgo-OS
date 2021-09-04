@@ -33,6 +33,9 @@ syscall_table = [
     "block_capacity",
     "block_size",
     "block_count",
+    "framebuffer_create",
+    "framebuffer_get_info",
+    "framebuffer_present",
 ]
 
 print("#pragma once")
