@@ -9,9 +9,10 @@
 #include <plic.h>
 #include <uart.h>
 #include <trap.h>
+#include <processor.h>
 
 // entry.S needs one stack per CPU.
-__attribute__((aligned(16))) char stack0[4096 * CONFIG_CPU];
+__attribute__((aligned(16))) char stack0[CONFIG_CPU][THREAD_SIZE];
 
 extern unsigned long __bss_start[];
 extern unsigned long __bss_end[];

@@ -6,6 +6,7 @@
 #include <list.h>
 #include <spinlock.h>
 #include <core/sched.h>
+#include <smp.h>
 
 class_impl(thread_t){};
 
@@ -44,16 +45,16 @@ thread_t *kthread_create(u64_t pc, u64_t arg)
 {
     thread_t *thread = new (thread_t);
 
-#define KERNEL_STACK_SIZE PAGE_SIZE
-    thread->kstack = (vaddr_t)alloc_page(KERNEL_STACK_SIZE / PAGE_SIZE);
-    thread->sz = KERNEL_STACK_SIZE;
+    thread->kstack = (vaddr_t)alloc_page(THREAD_SIZE / PAGE_SIZE);
+    thread->sz = THREAD_SIZE;
     thread->vmspace = new (vmspace_t);
 
-    thread->thread_info.kernel_sp = thread->kstack + KERNEL_STACK_SIZE;
+    thread->thread_info.kernel_sp = thread->kstack + THREAD_SIZE;
 
     thread->context.ra = (unsigned long)task_helper;
     thread->context.s0 = (unsigned long)pc;
     thread->context.sp = thread->thread_info.kernel_sp;
+    thread->thread_info.regs = task_pt_regs(thread);
 
     LOGI("context.sp:" $(thread->context.sp));
 
@@ -66,14 +67,13 @@ thread_t *thread_create(process_t *process, void *stack, void *pc, void *arg)
 {
     thread_t *thread = new (thread_t);
 
-#define KERNEL_STACK_SIZE PAGE_SIZE
-    thread->kstack = (vaddr_t)alloc_page(KERNEL_STACK_SIZE / PAGE_SIZE);
-    thread->sz = KERNEL_STACK_SIZE;
+    thread->kstack = (vaddr_t)alloc_page(THREAD_SIZE / PAGE_SIZE);
+    thread->sz = THREAD_SIZE;
     thread->vmspace = dynamic_cast(vmspace_t)(slot_get(process, VMSPACE_OBJ_ID));
     thread->process = process;
-    thread->thread_info.kernel_sp = thread->kstack + KERNEL_STACK_SIZE;
+    thread->thread_info.kernel_sp = thread->kstack + THREAD_SIZE;
 
-    struct pt_regs *regs = (struct pt_regs *)(thread->thread_info.kernel_sp - sizeof(struct pt_regs));
+    struct pt_regs *regs = task_pt_regs(thread);
     regs->sp = (uintptr_t)stack;
     regs->a0 = (uintptr_t)arg;
     regs->sepc = (uintptr_t)pc;
@@ -85,6 +85,7 @@ thread_t *thread_create(process_t *process, void *stack, void *pc, void *arg)
 
     thread->context.ra = (unsigned long)ret_from_exception;
     thread->context.sp = (unsigned long)regs;
+    thread->thread_info.regs = regs;
 
     LOGI("context.sp:" $(thread->context.sp));
 
@@ -189,6 +190,9 @@ void do_task_init()
     current->vmspace = new (vmspace_t);
     current->name = "idle";
     current->status = TASK_STATUS_RUNNING;
+    current->kstack = stack0[smp_processor_id()];
+    current->thread_info.kernel_sp = current->kstack + THREAD_SIZE;
+    current->thread_info.regs = task_pt_regs(current);
     thread_self_set(current);
 
     asm volatile("mv tp, %0" ::"r"(current));

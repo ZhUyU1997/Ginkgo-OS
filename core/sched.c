@@ -3,6 +3,7 @@
 #include <log.h>
 #include <core/sched.h>
 #include <core/timer.h>
+#include <switch_to.h>
 
 LIST_HEAD(ready);
 static spinlock_t sched_lock;
@@ -50,7 +51,7 @@ void schedule_to(thread_t *thread)
     spin_unlock(&sched_lock);
 
     switch_mm(current);
-    switch_to(old, current);
+    switch_to(old, current, old);
 }
 
 void schedule()
@@ -82,15 +83,11 @@ void schedule()
     spin_unlock(&sched_lock);
 
     switch_mm(current);
+    switch_to(old, current, old);    // old is previous task afterswitch
 
     if (old->status == TASK_STATUS_EXIT)
     {
         delete (old);
-        load_context(current);
-    }
-    else
-    {
-        switch_to(old, current);
     }
 }
 
@@ -98,7 +95,7 @@ static int sched_timer_function(struct timer_t *timer, void *data)
 {
     LOGI();
     thread_need_sched(thread_self());
-	timer_forward_now(timer, ms_to_ktime(1000));
+    timer_forward_now(timer, ms_to_ktime(1000));
     return 1;
 }
 

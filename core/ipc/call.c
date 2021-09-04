@@ -45,7 +45,7 @@ static u64_t thread_migrate_to_server(ipc_connection_t *conn, u64_t arg)
     conn->source = thread_self();
     target->active_conn = conn;
 
-    struct pt_regs *regs = (struct pt_regs *)(target->thread_info.kernel_sp - sizeof(struct pt_regs));
+    struct pt_regs *regs = task_pt_regs(target);
 
     regs->sp = (uintptr_t)conn->server_stack_top;
     regs->a0 = (uintptr_t)arg;
@@ -55,6 +55,8 @@ static u64_t thread_migrate_to_server(ipc_connection_t *conn, u64_t arg)
     // ipc_return sets context,  reset it
     target->context.ra = (unsigned long)ret_from_exception;
     target->context.sp = (unsigned long)regs;
+    target->thread_info.regs = regs;
+
     schedule_to(target);
     return 0;
 }

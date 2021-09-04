@@ -1,4 +1,5 @@
 #include <csr.h>
+#include <asm-offsets.h>
 
     # qemu -kernel loads the kernel at 0x80000000
     # and causes each CPU to jump there.
@@ -27,6 +28,7 @@ _entry:
     addi a1, a1, 1
     mul a0, a0, a1
     add sp, sp, a0
+	addi sp, sp, -(PT_SIZE_ON_STACK)
     # jump to start() in start.c
     call start
 spin:

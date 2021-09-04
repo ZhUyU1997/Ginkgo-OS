@@ -2,9 +2,7 @@
 
 #include <types.h>
 #include <csr.h>
-
-#define CONFIG_CPU 1
-
+#include <processor.h>
 
 #define SATP_SV39 (8L << 60)
 #define MAKE_SATP(pagetable) (SATP_SV39 | (((uint64)pagetable) >> 12))
@@ -63,12 +61,6 @@ static inline void local_flush_tlb_page(unsigned long addr)
 {
 	__asm__ __volatile__ ("sfence.vma %0" : : "r" (addr) : "memory");
 }
-
-#define PGSIZE 4096 // bytes per page
-#define PGSHIFT 12  // bits of offset within a page
-#define PAGE_SIZE 4096
-#define PAGE_SHIFT 12
-#define PAGE_MASK (PGSIZE - 1)
 
 #define PGROUNDUP(sz) (((sz) + PGSIZE - 1) & ~(PGSIZE - 1))
 #define PGROUNDDOWN(a) (((a)) & ~(PGSIZE - 1))

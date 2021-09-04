@@ -1,5 +1,6 @@
 #include "build-asm.h"
 #include "task.h"
+#include <stddef.h>
 
 void asm_offsets(void)
 {
@@ -7,7 +8,109 @@ void asm_offsets(void)
     OFFSET(TASK_TI_USER_SP, thread_t, thread_info.user_sp);
     OFFSET(TASK_TI_FLAGS, thread_t, thread_info.flags);
     OFFSET(TASK_TI_REGS, thread_t, thread_info.regs);
+    OFFSET(TASK_KSTACK, thread_t, kstack);
     OFFSET(TASK_CTX, thread_t, context);
+
+    OFFSET(TASK_THREAD_F0, thread_t, thread_info.fstate.f[0]);
+    OFFSET(TASK_THREAD_F1, thread_t, thread_info.fstate.f[1]);
+    OFFSET(TASK_THREAD_F2, thread_t, thread_info.fstate.f[2]);
+    OFFSET(TASK_THREAD_F3, thread_t, thread_info.fstate.f[3]);
+    OFFSET(TASK_THREAD_F4, thread_t, thread_info.fstate.f[4]);
+    OFFSET(TASK_THREAD_F5, thread_t, thread_info.fstate.f[5]);
+    OFFSET(TASK_THREAD_F6, thread_t, thread_info.fstate.f[6]);
+    OFFSET(TASK_THREAD_F7, thread_t, thread_info.fstate.f[7]);
+    OFFSET(TASK_THREAD_F8, thread_t, thread_info.fstate.f[8]);
+    OFFSET(TASK_THREAD_F9, thread_t, thread_info.fstate.f[9]);
+    OFFSET(TASK_THREAD_F10, thread_t, thread_info.fstate.f[10]);
+    OFFSET(TASK_THREAD_F11, thread_t, thread_info.fstate.f[11]);
+    OFFSET(TASK_THREAD_F12, thread_t, thread_info.fstate.f[12]);
+    OFFSET(TASK_THREAD_F13, thread_t, thread_info.fstate.f[13]);
+    OFFSET(TASK_THREAD_F14, thread_t, thread_info.fstate.f[14]);
+    OFFSET(TASK_THREAD_F15, thread_t, thread_info.fstate.f[15]);
+    OFFSET(TASK_THREAD_F16, thread_t, thread_info.fstate.f[16]);
+    OFFSET(TASK_THREAD_F17, thread_t, thread_info.fstate.f[17]);
+    OFFSET(TASK_THREAD_F18, thread_t, thread_info.fstate.f[18]);
+    OFFSET(TASK_THREAD_F19, thread_t, thread_info.fstate.f[19]);
+    OFFSET(TASK_THREAD_F20, thread_t, thread_info.fstate.f[20]);
+    OFFSET(TASK_THREAD_F21, thread_t, thread_info.fstate.f[21]);
+    OFFSET(TASK_THREAD_F22, thread_t, thread_info.fstate.f[22]);
+    OFFSET(TASK_THREAD_F23, thread_t, thread_info.fstate.f[23]);
+    OFFSET(TASK_THREAD_F24, thread_t, thread_info.fstate.f[24]);
+    OFFSET(TASK_THREAD_F25, thread_t, thread_info.fstate.f[25]);
+    OFFSET(TASK_THREAD_F26, thread_t, thread_info.fstate.f[26]);
+    OFFSET(TASK_THREAD_F27, thread_t, thread_info.fstate.f[27]);
+    OFFSET(TASK_THREAD_F28, thread_t, thread_info.fstate.f[28]);
+    OFFSET(TASK_THREAD_F29, thread_t, thread_info.fstate.f[29]);
+    OFFSET(TASK_THREAD_F30, thread_t, thread_info.fstate.f[30]);
+    OFFSET(TASK_THREAD_F31, thread_t, thread_info.fstate.f[31]);
+    OFFSET(TASK_THREAD_FCSR, thread_t, thread_info.fstate.fcsr);
+
+    DEFINE(TASK_THREAD_F0_F0,
+           offsetof(thread_t, thread_info.fstate.f[0]) - offsetof(thread_t, thread_info.fstate.f[0]));
+    DEFINE(TASK_THREAD_F1_F0,
+           offsetof(thread_t, thread_info.fstate.f[1]) - offsetof(thread_t, thread_info.fstate.f[0]));
+    DEFINE(TASK_THREAD_F2_F0,
+           offsetof(thread_t, thread_info.fstate.f[2]) - offsetof(thread_t, thread_info.fstate.f[0]));
+    DEFINE(TASK_THREAD_F3_F0,
+           offsetof(thread_t, thread_info.fstate.f[3]) - offsetof(thread_t, thread_info.fstate.f[0]));
+    DEFINE(TASK_THREAD_F4_F0,
+           offsetof(thread_t, thread_info.fstate.f[4]) - offsetof(thread_t, thread_info.fstate.f[0]));
+    DEFINE(TASK_THREAD_F5_F0,
+           offsetof(thread_t, thread_info.fstate.f[5]) - offsetof(thread_t, thread_info.fstate.f[0]));
+    DEFINE(TASK_THREAD_F6_F0,
+           offsetof(thread_t, thread_info.fstate.f[6]) - offsetof(thread_t, thread_info.fstate.f[0]));
+    DEFINE(TASK_THREAD_F7_F0,
+           offsetof(thread_t, thread_info.fstate.f[7]) - offsetof(thread_t, thread_info.fstate.f[0]));
+    DEFINE(TASK_THREAD_F8_F0,
+           offsetof(thread_t, thread_info.fstate.f[8]) - offsetof(thread_t, thread_info.fstate.f[0]));
+    DEFINE(TASK_THREAD_F9_F0,
+           offsetof(thread_t, thread_info.fstate.f[9]) - offsetof(thread_t, thread_info.fstate.f[0]));
+    DEFINE(TASK_THREAD_F10_F0,
+           offsetof(thread_t, thread_info.fstate.f[10]) - offsetof(thread_t, thread_info.fstate.f[0]));
+    DEFINE(TASK_THREAD_F11_F0,
+           offsetof(thread_t, thread_info.fstate.f[11]) - offsetof(thread_t, thread_info.fstate.f[0]));
+    DEFINE(TASK_THREAD_F12_F0,
+           offsetof(thread_t, thread_info.fstate.f[12]) - offsetof(thread_t, thread_info.fstate.f[0]));
+    DEFINE(TASK_THREAD_F13_F0,
+           offsetof(thread_t, thread_info.fstate.f[13]) - offsetof(thread_t, thread_info.fstate.f[0]));
+    DEFINE(TASK_THREAD_F14_F0,
+           offsetof(thread_t, thread_info.fstate.f[14]) - offsetof(thread_t, thread_info.fstate.f[0]));
+    DEFINE(TASK_THREAD_F15_F0,
+           offsetof(thread_t, thread_info.fstate.f[15]) - offsetof(thread_t, thread_info.fstate.f[0]));
+    DEFINE(TASK_THREAD_F16_F0,
+           offsetof(thread_t, thread_info.fstate.f[16]) - offsetof(thread_t, thread_info.fstate.f[0]));
+    DEFINE(TASK_THREAD_F17_F0,
+           offsetof(thread_t, thread_info.fstate.f[17]) - offsetof(thread_t, thread_info.fstate.f[0]));
+    DEFINE(TASK_THREAD_F18_F0,
+           offsetof(thread_t, thread_info.fstate.f[18]) - offsetof(thread_t, thread_info.fstate.f[0]));
+    DEFINE(TASK_THREAD_F19_F0,
+           offsetof(thread_t, thread_info.fstate.f[19]) - offsetof(thread_t, thread_info.fstate.f[0]));
+    DEFINE(TASK_THREAD_F20_F0,
+           offsetof(thread_t, thread_info.fstate.f[20]) - offsetof(thread_t, thread_info.fstate.f[0]));
+    DEFINE(TASK_THREAD_F21_F0,
+           offsetof(thread_t, thread_info.fstate.f[21]) - offsetof(thread_t, thread_info.fstate.f[0]));
+    DEFINE(TASK_THREAD_F22_F0,
+           offsetof(thread_t, thread_info.fstate.f[22]) - offsetof(thread_t, thread_info.fstate.f[0]));
+    DEFINE(TASK_THREAD_F23_F0,
+           offsetof(thread_t, thread_info.fstate.f[23]) - offsetof(thread_t, thread_info.fstate.f[0]));
+    DEFINE(TASK_THREAD_F24_F0,
+           offsetof(thread_t, thread_info.fstate.f[24]) - offsetof(thread_t, thread_info.fstate.f[0]));
+    DEFINE(TASK_THREAD_F25_F0,
+           offsetof(thread_t, thread_info.fstate.f[25]) - offsetof(thread_t, thread_info.fstate.f[0]));
+    DEFINE(TASK_THREAD_F26_F0,
+           offsetof(thread_t, thread_info.fstate.f[26]) - offsetof(thread_t, thread_info.fstate.f[0]));
+    DEFINE(TASK_THREAD_F27_F0,
+           offsetof(thread_t, thread_info.fstate.f[27]) - offsetof(thread_t, thread_info.fstate.f[0]));
+    DEFINE(TASK_THREAD_F28_F0,
+           offsetof(thread_t, thread_info.fstate.f[28]) - offsetof(thread_t, thread_info.fstate.f[0]));
+    DEFINE(TASK_THREAD_F29_F0,
+           offsetof(thread_t, thread_info.fstate.f[29]) - offsetof(thread_t, thread_info.fstate.f[0]));
+    DEFINE(TASK_THREAD_F30_F0,
+           offsetof(thread_t, thread_info.fstate.f[30]) - offsetof(thread_t, thread_info.fstate.f[0]));
+    DEFINE(TASK_THREAD_F31_F0,
+           offsetof(thread_t, thread_info.fstate.f[31]) - offsetof(thread_t, thread_info.fstate.f[0]));
+    DEFINE(TASK_THREAD_FCSR_F0,
+           offsetof(thread_t, thread_info.fstate.fcsr) - offsetof(thread_t, thread_info.fstate.f[0]));
 
     DEFINE(TIF_NEED_RESCHED, NEED_RESCHED);
     DEFINE(PT_SIZE, sizeof(struct pt_regs));
