@@ -11,15 +11,15 @@ X_CFLAGS	= -std=gnu11 -O3 -g -ggdb \
 				-fno-omit-frame-pointer -fno-common -nostdlib -mno-relax \
 				-fno-pie
 
-X_INCDIRS	= $(src)/include $(src)/lib/libc/include $(src)/lib/libx/include
+X_INCDIRS	= $(src)/include $(src)/lib/libc/include $(src)/lib/libx/include $(src)/lib/gato/include
 X_LDFLAGS	= -z max-page-size=4096  -N -T $(src)/user.ld -no-pie -nostdlib
 X_LIBS		= user
 X_LIBDIRS	= $(src)/lib
 
 
-MODULE		= lib test vfs_server test_vfs idle
+MODULE		= lib test vfs_server idle wm
 
-test vfs_server test_vfs idle: lib
+test vfs_server idle wm: lib
 
 X_PREPARE	:= $(src)/include/syscall_table.h
 
