@@ -152,6 +152,8 @@ vaddr_t prepare_env(vaddr_t top)
 
 process_t *launch_user_init(process_t *parent, const char *filename)
 {
+	LOGD("launch ["$(filename)"]");
+
 	process_t *process = new (process_t);
 	vmspace_t *vmspace = new (vmspace_t);
 	thread_t *current = thread_self();
@@ -176,8 +178,6 @@ process_t *launch_user_init(process_t *parent, const char *filename)
 	vaddr_t sp = prepare_env(ustack + PGSIZE * pagecount);
 	thread_t *thread = thread_create(process, (void *)sp, (void *)pc, NULL);
 
-	struct pt_regs *regs = (struct pt_regs *)(current->thread_info.kernel_sp - sizeof(struct pt_regs));
-
 	thread_resume(thread);
 
 	return process;
@@ -199,5 +199,5 @@ void do_user_init()
 	launch_user_init(root, "/idle");
 	launch_user_init(root, "/vfs_server");
 	launch_user_init(root, "/test");
-	// launch_user_init(root, "/test_vfs");
+	launch_user_init(root, "/wm");
 }

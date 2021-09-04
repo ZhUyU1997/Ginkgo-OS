@@ -42,3 +42,6 @@ SYSFUNC_DEF(block_write);
 SYSFUNC_DEF(block_capacity);
 SYSFUNC_DEF(block_size);
 SYSFUNC_DEF(block_count);
+SYSFUNC_DEF(framebuffer_create);
+SYSFUNC_DEF(framebuffer_get_info);
+SYSFUNC_DEF(framebuffer_present);
