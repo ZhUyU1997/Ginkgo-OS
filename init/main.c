@@ -33,8 +33,8 @@ void main()
 #endif
     do_sched_init();
 
+    local_irq_enable(); // do_user_init may trigger interrupt (virtio block)
     do_user_init();
-    local_irq_enable();
 
     // Not support kernel preemption, must be scheduled manually
     while (1)
