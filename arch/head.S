@@ -1,3 +1,5 @@
+#include <csr.h>
+
     # qemu -kernel loads the kernel at 0x80000000
     # and causes each CPU to jump there.
     # kernel.ld causes the following code to
@@ -5,6 +7,16 @@
 .section .text
 .global _entry
 _entry:
+	/* Mask all interrupts */
+	csrw mideleg, zero
+	csrw medeleg, zero
+	csrw mie, zero
+	csrw mip, zero
+
+    /* Enable FPU and accelerator if present */
+	li t0, MSTATUS_FS | MSTATUS_XS
+	csrs mstatus, t0
+
     # set up a stack for C.
     # stack0 is declared in start.c,
     # with a 4096-byte stack per CPU.

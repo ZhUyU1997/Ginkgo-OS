@@ -151,6 +151,65 @@
 #define IE_TIE (_AC(0x1, UL) << RV_IRQ_TIMER)
 #define IE_EIE (_AC(0x1, UL) << RV_IRQ_EXT)
 
+// Supervisor Status Register, sstatus
+#define SSTATUS_SPP (1L << 8)  // Previous mode, 1=Supervisor, 0=User
+#define SSTATUS_SPIE (1L << 5) // Supervisor Previous Interrupt Enable
+#define SSTATUS_UPIE (1L << 4) // User Previous Interrupt Enable
+#define SSTATUS_SIE (1L << 1)  // Supervisor Interrupt Enable
+#define SSTATUS_UIE (1L << 0)  // User Interrupt Enable
+
+// Supervisor Interrupt Enable
+#define SIE_SEIE (1L << 9) // external
+#define SIE_STIE (1L << 5) // timer
+#define SIE_SSIE (1L << 1) // software
+
+// Machine Status Register, mstatus
+#define MSTATUS_UIE			(1 << 0)
+#define MSTATUS_SIE			(1 << 1)
+#define MSTATUS_MIE			(1 << 3) // machine-mode interrupt enable.
+#define MSTATUS_UPIE		(1 << 4)
+#define MSTATUS_SPIE		(1 << 5)
+#define MSTATUS_MPIE		(1 << 7)
+#define MSTATUS_SPP			(1 << 8)
+#define MSTATUS_MPP			(3 << 11)
+#define MSTATUS_MPP_MASK	(3 << 11) // previous mode.
+#define MSTATUS_MPP_M		(3 << 11)
+#define MSTATUS_MPP_S		(1 << 11)
+#define MSTATUS_MPP_U		(0 << 11)
+#define MSTATUS_FS			(3 << 13)
+#define MSTATUS_XS			(3 << 15)
+#define MSTATUS_MPRV		(1 << 17)
+#define MSTATUS_SUM			(1 << 18)
+#define MSTATUS_MXR			(1 << 19)
+#define MSTATUS_TVM			(1 << 20)
+#define MSTATUS_TW			(1 << 21)
+#define MSTATUS_TSR			(1 << 22)
+#define MSTATUS32_SD		(1 << 31)
+#define MSTATUS_UXL			(3ULL << 32)
+#define MSTATUS_SXL			(3ULL << 34)
+#define MSTATUS64_SD		(1ULL << 63)
+
+#define MIP_USIP			(1 << 0)
+#define MIP_SSIP			(1 << 1)
+#define MIP_MSIP			(1 << 3)
+#define MIP_UTIP			(1 << 4)
+#define MIP_STIP			(1 << 5)
+#define MIP_MTIP			(1 << 7)
+#define MIP_UEIP			(1 << 8)
+#define MIP_SEIP			(1 << 9)
+#define MIP_MEIP			(1 << 11)
+
+// Machine-mode Interrupt Enable
+#define MIE_USIE			(1 << 0)
+#define MIE_SSIE			(1 << 1)
+#define MIE_MSIE			(1 << 3)  // software
+#define MIE_UTIE			(1 << 4)
+#define MIE_STIE			(1 << 5)
+#define MIE_MTIE			(1 << 7)  // timer
+#define MIE_UEIE			(1 << 8)
+#define MIE_SEIE			(1 << 9)
+#define MIE_MEIE			(1 << 11) // external
+
 #define csr_swap(csr, val)                                      \
 	({                                                          \
 		unsigned long __v = (unsigned long)(val);               \
