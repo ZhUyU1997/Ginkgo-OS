@@ -13,6 +13,8 @@ void * realloc(void * ptr, size_t size);
 void * calloc(size_t nmemb, size_t size);
 void free(void * ptr);
 
+void memory_read_meminfo(size_t * mused, size_t * mfree);
+
 #ifdef __cplusplus
 }
 #endif

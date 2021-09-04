@@ -838,6 +838,15 @@ void mm_info(void *mm, size_t *mused, size_t *mfree)
 
 static void *__heap_pool = NULL;
 
+void memory_read_meminfo(size_t * mused, size_t * mfree)
+{
+	if(__heap_pool)
+	{
+		if(mused && mfree)
+			tlsf_info(mm_get(__heap_pool), mused, mfree);
+	}
+}
+
 void *malloc(size_t size)
 {
     void *m;
@@ -894,7 +903,7 @@ void free(void *ptr)
 void do_init_mem(void)
 {
     extern unsigned char __heap_start[];
-    size_t heap_size = 512 * 1024;
+    size_t heap_size = 2 * 1024 * 1024;
 
     int slot = usys_vmo_create(heap_size, VMO_DATA);
     usys_vmo_map(0, slot, (u64_t)&__heap_start, VM_READ | VM_WRITE, 0);
